@@ -1,98 +1,235 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ImageBackground, ScrollView, StyleSheet, View } from 'react-native';
+import { Avatar, Button, Card, Checkbox, ProgressBar, Text, useTheme } from 'react-native-paper';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { MOCK_DATA, type Supplement, type SupplementTiming } from '@/constants/mockData';
+
+type TimingSection = 'Matin' | 'Midi' | 'Soir';
+
+function timingToSection(timing: SupplementTiming): TimingSection {
+  if (timing === 'Pre-Workout') return 'Midi';
+  return timing;
+}
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
+  const theme = useTheme();
+  const { dashboard, workoutSession } = MOCK_DATA;
+  const [supplements, setSupplements] = useState<Supplement[]>(MOCK_DATA.supplements);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const supplementsBySection = useMemo(() => {
+    const grouped: Record<TimingSection, Supplement[]> = {
+      Matin: [],
+      Midi: [],
+      Soir: [],
+    };
+
+    for (const s of supplements) {
+      grouped[timingToSection(s.timing)].push(s);
+    }
+
+    return grouped;
+  }, [supplements]);
+
+  const takenCount = useMemo(() => supplements.filter((s) => s.isTaken).length, [supplements]);
+  const supplementsProgress = supplements.length === 0 ? 0 : takenCount / supplements.length;
+
+  const toggleSupplement = (id: string) => {
+    setSupplements((prev) => prev.map((s) => (s.id === id ? { ...s, isTaken: !s.isTaken } : s)));
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <Avatar.Text
+          size={44}
+          label={dashboard.nom_eleve.slice(0, 1).toUpperCase()}
+          style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
+        />
+        <View style={styles.headerText}>
+          <Text variant="titleLarge" style={styles.heading}>
+            Bonjour {dashboard.nom_eleve} 👋
+          </Text>
+          <Text variant="bodyMedium" style={styles.subheading}>
+            {dashboard.streak_jours} jours de suite 🔥
+          </Text>
+        </View>
+      </View>
+
+      <Card mode="contained" style={[styles.card, styles.flatCard]}>
+        <Card.Content style={styles.cardContentTight}>
+          <View style={styles.rowBetween}>
+            <Text variant="titleMedium" style={styles.heading}>
+              Progression du jour
+            </Text>
+            <Text variant="labelMedium">
+              {takenCount}/{supplements.length}
+            </Text>
+          </View>
+          <ProgressBar
+            progress={supplementsProgress}
+            color={theme.colors.primary}
+            style={styles.progress}
+          />
+        </Card.Content>
+      </Card>
+
+      <Text variant="titleMedium" style={[styles.sectionTitle, styles.heading]}>
+        Ma Séance du jour
+      </Text>
+      <Card mode="contained" style={[styles.card, styles.heroCard, styles.flatCard]}>
+        <ImageBackground
+          source={{ uri: workoutSession.image_url }}
+          resizeMode="cover"
+          imageStyle={styles.heroImage}
+          style={styles.heroImageWrap}>
+          <View style={styles.heroOverlayTop} />
+          <View style={styles.heroOverlayBottom} />
+
+          <View style={styles.heroContent}>
+            <Text variant="titleLarge" style={styles.heroTitle}>
+              {workoutSession.titre}
+            </Text>
+            <Text variant="bodyMedium" style={styles.heroMeta}>
+              {workoutSession.duree} min • {workoutSession.status === 'Todo' ? 'À faire' : 'Fait'}
+            </Text>
+
+            {workoutSession.status === 'Todo' ? (
+              <Button
+                mode="contained"
+                onPress={() => router.push('/workout/session')}
+                buttonColor={theme.colors.primary}
+                textColor={theme.colors.onPrimary}
+                style={styles.heroButton}
+                contentStyle={styles.heroButtonContent}>
+                Démarrer
+              </Button>
+            ) : null}
+          </View>
+        </ImageBackground>
+      </Card>
+
+      <Text variant="titleMedium" style={[styles.sectionTitle, styles.heading]}>
+        Mon Protocole (Suppléments)
+      </Text>
+
+      {(['Matin', 'Midi', 'Soir'] as const).map((section) => {
+        const items = supplementsBySection[section];
+        if (items.length === 0) return null;
+
+        return (
+          <Card key={section} mode="contained" style={[styles.card, styles.flatCard]}>
+            <Card.Title title={section} />
+            <Card.Content style={styles.cardContentTight}>
+              {items.map((s) => (
+                <Checkbox.Item
+                  key={s.id}
+                  label={`${s.nom} • ${s.dosage}`}
+                  status={s.isTaken ? 'checked' : 'unchecked'}
+                  onPress={() => toggleSupplement(s.id)}
+                />
+              ))}
+            </Card.Content>
+          </Card>
+        );
+      })}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#111111',
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 28,
+    gap: 12,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  avatar: {
+    borderRadius: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  headerText: {
+    flex: 1,
+    gap: 2,
+  },
+  heading: {
+    fontWeight: '800',
+  },
+  subheading: {
+    color: '#A1A1AA',
+  },
+  sectionTitle: {
+    marginTop: 8,
+  },
+  card: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  flatCard: {
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  cardContent: {
+    paddingTop: 12,
+  },
+  cardContentTight: {
+    gap: 10,
+  },
+  progress: {
+    height: 10,
+    borderRadius: 99,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroCard: {
+    padding: 0,
+  },
+  heroImageWrap: {
+    minHeight: 170,
+    justifyContent: 'flex-end',
+  },
+  heroImage: {
+    borderRadius: 20,
+  },
+  heroOverlayTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  heroOverlayBottom: {
     position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 120,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+  },
+  heroContent: {
+    padding: 16,
+    gap: 6,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  heroMeta: {
+    color: '#A1A1AA',
+  },
+  heroButton: {
+    marginTop: 8,
+    borderRadius: 16,
+  },
+  heroButtonContent: {
+    paddingVertical: 8,
   },
 });
