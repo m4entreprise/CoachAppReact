@@ -4,15 +4,17 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, IconButton, Text, useTheme } from 'react-native-paper';
 
+import { CalendarDays, Camera, ChevronRight, Settings, TrendingUp, User } from 'lucide-react-native';
+
 import WeightChart from '@/components/profile/WeightChart';
 import { loadCheckIns, type CheckInEntry } from '@/lib/checkinStorage';
 import {
-    loadMeasurements,
-    loadPersonalInfo,
-    loadProgressPhotos,
-    type MeasurementEntry,
-    type PersonalInfo,
-    type ProgressPhotoEntry,
+  loadMeasurements,
+  loadPersonalInfo,
+  loadProgressPhotos,
+  type MeasurementEntry,
+  type PersonalInfo,
+  type ProgressPhotoEntry,
 } from '@/lib/profileStorage';
 
 const formatDateFr = (iso: string) => {
@@ -47,6 +49,14 @@ export default function ProfileScreen() {
     const sign = delta > 0 ? '+' : '';
     return `${sign}${delta.toFixed(1)} kg`;
   }, [latest?.weightKg, previous?.weightKg]);
+
+  const dateLabel = useMemo(() => {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+    }).format(new Date());
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,59 +121,154 @@ export default function ProfileScreen() {
       pathname: '/checkin/history' as const,
     });
 
+  const openCheckInAdd = () => router.push('/checkin/entry' as const);
+
   return (
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <Text variant="titleLarge">Mon Profil</Text>
-            <Text variant="bodyMedium" style={styles.subtitle}>
-              Suivi du poids et des mensurations dans le temps.
-            </Text>
+          <View style={styles.headerTopLine}>
+            <View style={styles.headerLeft}>
+              <Text variant="headlineSmall" style={styles.heading}>
+                Profil
+              </Text>
+              <Text variant="bodyMedium" style={styles.subheading}>
+                {dateLabel}
+              </Text>
+            </View>
+
+            <View style={[styles.headerPill, { borderColor: theme.colors.outline }]}> 
+              <TrendingUp size={16} color={theme.colors.primary} />
+              <Text variant="labelMedium" style={{ color: theme.colors.onSurface }}>
+                {loading ? '—' : `${sortedEntries.length} mesures`}
+              </Text>
+            </View>
           </View>
-          <IconButton icon="plus" onPress={openAdd} />
+
+          <Text variant="bodyMedium" style={styles.subheading}>
+            Suivi du poids, photos et check-ins.
+          </Text>
         </View>
 
-         <Card mode="elevated" style={styles.card}>
-           <Card.Title title="Informations personnelles" subtitle="Profil stable" />
-           <Card.Content>
-             <View style={styles.personalRow}>
-               <View style={styles.avatarWrap}>
-                 {personal.profilePhotoUri ? (
-                   <Image source={{ uri: personal.profilePhotoUri }} style={styles.avatarImage} />
-                 ) : (
-                   <View style={[styles.avatarEmpty, { borderColor: theme.colors.outline }]}>
-                     <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                       —
-                     </Text>
-                   </View>
-                 )}
-               </View>
-               <View style={styles.personalText}>
-                 <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                   {(personal.firstName || personal.lastName)
-                     ? `${personal.firstName ?? ''} ${personal.lastName ?? ''}`.trim()
-                     : 'À compléter'}
-                 </Text>
-                 <Text
-                   variant="bodySmall"
-                   style={[styles.muted, { color: theme.colors.onSurfaceVariant, marginTop: 6 }]}>
-                   Taille : {personal.heightCm !== undefined ? `${personal.heightCm} cm` : '—'}
-                 </Text>
-                 <Text variant="bodySmall" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
-                   Objectif : {personal.goal ?? '—'}
-                 </Text>
-               </View>
-             </View>
-           </Card.Content>
-           <Card.Actions>
-             <Button mode="contained" onPress={openPersonal}>
-               Modifier
-             </Button>
-           </Card.Actions>
-         </Card>
+        <View style={styles.quickGrid}>
+          <Pressable style={[styles.quickTile, { borderColor: theme.colors.outline }]} onPress={openPersonal}>
+            <View style={[styles.quickIcon, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}> 
+              <Settings size={20} color={theme.colors.primary} />
+            </View>
+            <View style={styles.quickText}>
+              <Text variant="titleMedium" style={styles.heading}>
+                Profil
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                Infos personnelles
+              </Text>
+            </View>
+            <ChevronRight size={18} color={theme.colors.onSurfaceVariant} />
+          </Pressable>
 
-         <Card mode="elevated" style={styles.card}>
+          <Pressable style={[styles.quickTile, { borderColor: theme.colors.outline }]} onPress={openAdd}>
+            <View style={[styles.quickIcon, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}> 
+              <TrendingUp size={20} color={theme.colors.primary} />
+            </View>
+            <View style={styles.quickText}>
+              <Text variant="titleMedium" style={styles.heading}>
+                Mesures
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                Ajouter un poids
+              </Text>
+            </View>
+            <ChevronRight size={18} color={theme.colors.onSurfaceVariant} />
+          </Pressable>
+
+          <Pressable style={[styles.quickTile, { borderColor: theme.colors.outline }]} onPress={openProgressAdd}>
+            <View style={[styles.quickIcon, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}> 
+              <Camera size={20} color={theme.colors.primary} />
+            </View>
+            <View style={styles.quickText}>
+              <Text variant="titleMedium" style={styles.heading}>
+                Photos
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                Nouvelle évolution
+              </Text>
+            </View>
+            <ChevronRight size={18} color={theme.colors.onSurfaceVariant} />
+          </Pressable>
+
+          <Pressable style={[styles.quickTile, { borderColor: theme.colors.outline }]} onPress={openCheckInAdd}>
+            <View style={[styles.quickIcon, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}> 
+              <CalendarDays size={20} color={theme.colors.primary} />
+            </View>
+            <View style={styles.quickText}>
+              <Text variant="titleMedium" style={styles.heading}>
+                Check-in
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                En 1 minute
+              </Text>
+            </View>
+            <ChevronRight size={18} color={theme.colors.onSurfaceVariant} />
+          </Pressable>
+        </View>
+
+        <Card mode="contained" style={[styles.card, styles.flatCard]}>
+          <Card.Content style={styles.sectionCardContent}>
+            <View style={styles.sectionHeaderBlock}>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionIcon, { borderColor: theme.colors.outline }]}> 
+                  <User size={18} color={theme.colors.primary} />
+                </View>
+                <View style={styles.sectionTitleText}>
+                  <Text variant="titleMedium" style={styles.heading}>
+                    Informations personnelles
+                  </Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    Profil stable
+                  </Text>
+                </View>
+              </View>
+
+              <Pressable onPress={openPersonal} style={styles.inlineAction}>
+                <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+                  Modifier
+                </Text>
+                <ChevronRight size={16} color={theme.colors.primary} />
+              </Pressable>
+            </View>
+
+            <View style={styles.personalRow}>
+              <View style={styles.avatarWrap}>
+                {personal.profilePhotoUri ? (
+                  <Image source={{ uri: personal.profilePhotoUri }} style={styles.avatarImage} />
+                ) : (
+                  <View style={[styles.avatarEmpty, { borderColor: theme.colors.outline }]}>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      —
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.personalText}>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                  {(personal.firstName || personal.lastName)
+                    ? `${personal.firstName ?? ''} ${personal.lastName ?? ''}`.trim()
+                    : 'À compléter'}
+                </Text>
+                <Text
+                  variant="bodySmall"
+                  style={[styles.muted, { color: theme.colors.onSurfaceVariant, marginTop: 6 }]}>
+                  Taille : {personal.heightCm !== undefined ? `${personal.heightCm} cm` : '—'}
+                </Text>
+                <Text variant="bodySmall" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
+                  Objectif : {personal.goal ?? '—'}
+                </Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+         <Card mode="contained" style={[styles.card, styles.flatCard]}>
            <Card.Title title="Évolutions photo" subtitle={loading ? 'Chargement…' : `${sortedProgress.length} entrée(s)`} />
            <Card.Content>
              {sortedProgress.length === 0 ? (
@@ -206,7 +311,7 @@ export default function ProfileScreen() {
            </Card.Actions>
          </Card>
 
-        <Card mode="elevated" style={styles.card}>
+        <Card mode="contained" style={[styles.card, styles.flatCard]}>
           <Card.Title title="Check-in hebdo" subtitle={loading ? 'Chargement…' : `${sortedCheckIns.length} entrée(s)`} />
           <Card.Content>
             {sortedCheckIns.length === 0 ? (
@@ -234,7 +339,7 @@ export default function ProfileScreen() {
           </Card.Actions>
         </Card>
 
-        <Card mode="elevated" style={styles.card}>
+        <Card mode="contained" style={[styles.card, styles.flatCard]}>
           <Card.Title title="Résumé" subtitle={loading ? 'Chargement…' : `${sortedEntries.length} entrée(s)`} />
           <Card.Content>
             {latest?.weightKg ? (
@@ -270,12 +375,17 @@ export default function ProfileScreen() {
           </Card.Actions>
         </Card>
 
-        <View style={styles.sectionHeader}>
-          <Text variant="titleMedium">Historique</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text variant="titleMedium" style={styles.heading}>
+            Historique
+          </Text>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            {loading ? '—' : `${sortedEntries.length} entrée(s)`}
+          </Text>
         </View>
 
         {sortedEntries.length === 0 ? (
-          <Card mode="outlined" style={styles.emptyCard}>
+          <Card mode="contained" style={[styles.card, styles.flatCard]}>
             <Card.Content>
               <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                 Aucune mesure enregistrée.
@@ -285,7 +395,7 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.stack}>
             {sortedEntries.map((e) => (
-              <Card key={e.id} mode="elevated" style={styles.card}>
+              <Card key={e.id} mode="contained" style={[styles.card, styles.flatCard]}>
                 <Card.Title
                   title={formatDateFr(e.dateISO)}
                   subtitle={e.weightKg !== undefined ? `${e.weightKg.toFixed(1)} kg` : '—'}
@@ -322,16 +432,41 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#111111',
   },
   content: {
     padding: 16,
     paddingBottom: 28,
+    gap: 12,
   },
   headerRow: {
+    gap: 6,
+  },
+  headerTopLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: '#1E1E1E',
+  },
+  heading: {
+    fontWeight: '800',
+  },
+  subheading: {
+    color: '#A1A1AA',
   },
   headerText: {
     flex: 1,
@@ -342,15 +477,21 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   card: {
-    borderRadius: 14,
+    borderRadius: 20,
     overflow: 'hidden',
-    marginBottom: 12,
   },
-  emptyCard: {
-    borderRadius: 14,
-    overflow: 'hidden',
+  flatCard: {
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   sectionHeader: {
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 6,
     marginBottom: 8,
   },
@@ -372,6 +513,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  quickGrid: {
+    gap: 10,
+  },
+  quickTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    padding: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: '#1E1E1E',
+  },
+  quickIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  quickText: {
+    flex: 1,
+  },
+  sectionCardContent: {
+    gap: 12,
+  },
+  sectionHeaderBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E1E1E',
+  },
+  sectionTitleText: {
+    flex: 1,
+  },
+  inlineAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   avatarWrap: {
     width: 64,

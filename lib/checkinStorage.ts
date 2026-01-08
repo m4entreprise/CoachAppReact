@@ -11,17 +11,14 @@ export type CheckInEntry = {
 };
 
 const CHECKINS_KEY = 'checkins_v1';
+const CHECKINS_KEY_LEGACY = 'checkins';
 
 function isValidScore(x: unknown): x is number {
   return typeof x === 'number' && Number.isFinite(x) && x >= 1 && x <= 10;
 }
 
-export async function loadCheckIns(): Promise<CheckInEntry[]> {
-  const raw = await AsyncStorage.getItem(CHECKINS_KEY);
-  if (!raw) return [];
-
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) return [];
+function parseCheckInsFromUnknown(parsed: unknown): CheckInEntry[] | null {
+  if (!Array.isArray(parsed)) return null;
 
   return parsed
     .filter((x): x is CheckInEntry =>
@@ -49,6 +46,30 @@ export async function loadCheckIns(): Promise<CheckInEntry[]> {
       nutritionAdherence: x.nutritionAdherence,
       painNotes: typeof x.painNotes === 'string' ? x.painNotes : undefined,
     }));
+}
+
+async function loadCheckInsRaw(key: string): Promise<CheckInEntry[] | null> {
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parseCheckInsFromUnknown(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export async function loadCheckIns(): Promise<CheckInEntry[]> {
+  const current = await loadCheckInsRaw(CHECKINS_KEY);
+  if (current) return current;
+
+  const legacy = await loadCheckInsRaw(CHECKINS_KEY_LEGACY);
+  if (!legacy) return [];
+
+  await AsyncStorage.setItem(CHECKINS_KEY, JSON.stringify(legacy));
+  await AsyncStorage.removeItem(CHECKINS_KEY_LEGACY);
+  return legacy;
 }
 
 export async function saveCheckIns(entries: CheckInEntry[]): Promise<void> {

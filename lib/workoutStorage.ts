@@ -33,13 +33,11 @@ export type WorkoutLogDraft = Omit<WorkoutLogEntry, 'rpe' | 'notes'>;
 
 const WORKOUT_LOGS_KEY = 'workout_logs_v1';
 const WORKOUT_DRAFTS_KEY = 'workout_log_drafts_v1';
+const WORKOUT_LOGS_KEY_LEGACY = 'workout_logs';
+const WORKOUT_DRAFTS_KEY_LEGACY = 'workout_log_drafts';
 
-export async function loadWorkoutLogs(): Promise<WorkoutLogEntry[]> {
-  const raw = await AsyncStorage.getItem(WORKOUT_LOGS_KEY);
-  if (!raw) return [];
-
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) return [];
+function parseWorkoutLogsFromUnknown(parsed: unknown): WorkoutLogEntry[] | null {
+  if (!Array.isArray(parsed)) return null;
 
   return parsed
     .filter((x): x is WorkoutLogEntry =>
@@ -55,6 +53,47 @@ export async function loadWorkoutLogs(): Promise<WorkoutLogEntry[]> {
     .map((x) => x);
 }
 
+async function loadWorkoutLogsRaw(key: string): Promise<WorkoutLogEntry[] | null> {
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parseWorkoutLogsFromUnknown(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function parseDraftMapFromUnknown(parsed: unknown): Record<string, WorkoutLogDraft> | null {
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+  return parsed as Record<string, WorkoutLogDraft>;
+}
+
+async function loadDraftMapRaw(key: string): Promise<Record<string, WorkoutLogDraft> | null> {
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parseDraftMapFromUnknown(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export async function loadWorkoutLogs(): Promise<WorkoutLogEntry[]> {
+  const current = await loadWorkoutLogsRaw(WORKOUT_LOGS_KEY);
+  if (current) return current;
+
+  const legacy = await loadWorkoutLogsRaw(WORKOUT_LOGS_KEY_LEGACY);
+  if (!legacy) return [];
+
+  await AsyncStorage.setItem(WORKOUT_LOGS_KEY, JSON.stringify(legacy));
+  await AsyncStorage.removeItem(WORKOUT_LOGS_KEY_LEGACY);
+  return legacy;
+}
+
 export async function saveWorkoutLogs(entries: WorkoutLogEntry[]): Promise<void> {
   await AsyncStorage.setItem(WORKOUT_LOGS_KEY, JSON.stringify(entries));
 }
@@ -65,13 +104,15 @@ export async function addWorkoutLog(entry: WorkoutLogEntry): Promise<void> {
 }
 
 async function loadDraftMap(): Promise<Record<string, WorkoutLogDraft>> {
-  const raw = await AsyncStorage.getItem(WORKOUT_DRAFTS_KEY);
-  if (!raw) return {};
+  const current = await loadDraftMapRaw(WORKOUT_DRAFTS_KEY);
+  if (current) return current;
 
-  const parsed = JSON.parse(raw) as unknown;
-  if (typeof parsed !== 'object' || parsed === null) return {};
+  const legacy = await loadDraftMapRaw(WORKOUT_DRAFTS_KEY_LEGACY);
+  if (!legacy) return {};
 
-  return parsed as Record<string, WorkoutLogDraft>;
+  await AsyncStorage.setItem(WORKOUT_DRAFTS_KEY, JSON.stringify(legacy));
+  await AsyncStorage.removeItem(WORKOUT_DRAFTS_KEY_LEGACY);
+  return legacy;
 }
 
 async function saveDraftMap(map: Record<string, WorkoutLogDraft>): Promise<void> {

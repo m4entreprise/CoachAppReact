@@ -11,13 +11,10 @@ export type MealEntry = {
 };
 
 const MEALS_KEY = 'nutrition_meals_v1';
+const MEALS_KEY_LEGACY = 'nutrition_meals';
 
-export async function loadMeals(): Promise<MealEntry[]> {
-  const raw = await AsyncStorage.getItem(MEALS_KEY);
-  if (!raw) return [];
-
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) return [];
+function parseMealsFromUnknown(parsed: unknown): MealEntry[] | null {
+  if (!Array.isArray(parsed)) return null;
 
   return parsed
     .filter((x): x is MealEntry =>
@@ -37,6 +34,30 @@ export async function loadMeals(): Promise<MealEntry[]> {
       photoUri: typeof x.photoUri === 'string' ? x.photoUri : undefined,
       notes: typeof x.notes === 'string' ? x.notes : undefined,
     }));
+}
+
+async function loadMealsRaw(key: string): Promise<MealEntry[] | null> {
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parseMealsFromUnknown(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export async function loadMeals(): Promise<MealEntry[]> {
+  const current = await loadMealsRaw(MEALS_KEY);
+  if (current) return current;
+
+  const legacy = await loadMealsRaw(MEALS_KEY_LEGACY);
+  if (!legacy) return [];
+
+  await AsyncStorage.setItem(MEALS_KEY, JSON.stringify(legacy));
+  await AsyncStorage.removeItem(MEALS_KEY_LEGACY);
+  return legacy;
 }
 
 export async function saveMeals(entries: MealEntry[]): Promise<void> {

@@ -128,21 +128,21 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 
 ## 7) Offline-first (MVP local)
 - [x] Données profil/mesures/photos persistées localement.
-- [ ] Sécuriser la persistance “app-wide”
+- [x] Sécuriser la persistance “app-wide”
   - [x] Migrer les données “workout logs” vers un stockage local persistant (si pas déjà).
-  - [ ] Gestion des versions (ex: `*_v1`, `*_v2`) + migrations légères.
-- [ ] Gestion stockage média
+  - [x] Gestion des versions (ex: `*_v1`, `*_v2`) + migrations légères.
+- [x] Gestion stockage média
   - [x] Copier images sélectionnées dans le dossier app.
   - [x] Nettoyage : quand on supprime une entrée, supprimer les fichiers associés (déjà fait pour progress, à vérifier partout).
 
 ---
 
 ## 8) UX / UI polishing (MVP)
-- [ ] Cohérence UI (Paper)
-  - [ ] Cartes, paddings, titres homogènes.
-  - [ ] Boutons primaires cohérents.
-- [ ] États vides élégants
-  - [ ] Profil / progress photos / nutrition journal / check-ins.
+- [x] Cohérence UI (Paper)
+  - [x] Cartes, paddings, titres homogènes.
+  - [x] Boutons primaires cohérents.
+- [x] États vides élégants
+  - [x] Profil / progress photos / nutrition journal / check-ins.
 - [ ] Accessibilité
   - [ ] textes, contrastes, tailles.
 
@@ -152,11 +152,11 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 - [x] Lint OK (actuellement ✅, à maintenir).
 - [ ] Tests manuels “parcours élève”
   - [ ] onboarding local (premier lancement)
-  - [ ] faire une séance complète + résumé + historique
-  - [ ] ajouter poids + graph
-  - [ ] ajouter photos progrès + éditer + supprimer
-  - [ ] journal nutrition photo
-  - [ ] check-in hebdo
+  - [x] faire une séance complète + résumé + historique
+  - [x] ajouter poids + graph
+  - [x] ajouter photos progrès + éditer + supprimer
+  - [x] journal nutrition photo
+  - [x] check-in hebdo
 - [ ] Gestion permissions
   - [x] galerie refusée → UX correcte
   - [ ] caméra (si ajoutée) refusée → UX correcte
@@ -169,6 +169,12 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 # Roadmap (Now / Next / Later)
 
 ## NOW (priorité MVP)
+
+- [x] Refonte "Aujourd'hui" (dashboard moderne, icônes Lucide, quick actions)
+- [x] Améliorer "Training" (design moderne, icônes Lucide, hiérarchie + CTA)
+- [ ] Améliorer "Nutrition" (design moderne, icônes Lucide, hiérarchie + CTA)
+- [ ] Améliorer "Profil" (design moderne, quick actions, cartes premium)
+- [ ] Supprimer "Explorer" de la navbar du bas
 
 ### Sprint 1 — Entraînement : historique + persistance (START HERE)
 - [x] Persistance des “workout logs” (storage local, versionné)

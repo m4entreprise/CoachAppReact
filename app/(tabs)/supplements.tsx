@@ -263,8 +263,6 @@ export default function SupplementsScreen() {
           <Dialog.Actions>
             <Button
               mode="contained"
-              buttonColor={theme.colors.primary}
-              textColor={theme.colors.onPrimary}
               style={styles.dialogButton}
               onPress={closeInfo}>
               OK

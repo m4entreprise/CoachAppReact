@@ -26,6 +26,8 @@ export type SupplementComplianceDay = {
 
 const SUPPLEMENT_PROTOCOL_KEY = 'supplement_protocol_v1';
 const SUPPLEMENT_COMPLIANCE_KEY = 'supplement_compliance_v1';
+const SUPPLEMENT_PROTOCOL_KEY_LEGACY = 'supplement_protocol';
+const SUPPLEMENT_COMPLIANCE_KEY_LEGACY = 'supplement_compliance';
 
 function buildDefaultProtocol(): SupplementProtocolItem[] {
   return MOCK_DATA.supplements.map((s) => ({
@@ -47,13 +49,32 @@ export function parseDayKeyToDate(dayKey: string): Date {
 }
 
 async function loadComplianceMap(): Promise<Record<string, SupplementComplianceDay>> {
-  const raw = await AsyncStorage.getItem(SUPPLEMENT_COMPLIANCE_KEY);
-  if (!raw) return {};
+  const current = await AsyncStorage.getItem(SUPPLEMENT_COMPLIANCE_KEY);
+  if (current) {
+    try {
+      const parsed = JSON.parse(current) as unknown;
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return parsed as Record<string, SupplementComplianceDay>;
+      }
+    } catch {
+      // ignore
+    }
+  }
 
-  const parsed = JSON.parse(raw) as unknown;
-  if (typeof parsed !== 'object' || parsed === null) return {};
+  const legacyRaw = await AsyncStorage.getItem(SUPPLEMENT_COMPLIANCE_KEY_LEGACY);
+  if (!legacyRaw) return {};
 
-  return parsed as Record<string, SupplementComplianceDay>;
+  try {
+    const parsed = JSON.parse(legacyRaw) as unknown;
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+
+    const migrated = parsed as Record<string, SupplementComplianceDay>;
+    await AsyncStorage.setItem(SUPPLEMENT_COMPLIANCE_KEY, JSON.stringify(migrated));
+    await AsyncStorage.removeItem(SUPPLEMENT_COMPLIANCE_KEY_LEGACY);
+    return migrated;
+  } catch {
+    return {};
+  }
 }
 
 async function saveComplianceMap(map: Record<string, SupplementComplianceDay>): Promise<void> {
@@ -70,33 +91,73 @@ export async function ensureSupplementProtocolInitialized(): Promise<SupplementP
 }
 
 export async function loadSupplementProtocol(): Promise<SupplementProtocolItem[]> {
-  const raw = await AsyncStorage.getItem(SUPPLEMENT_PROTOCOL_KEY);
-  if (!raw) return [];
+  const current = await AsyncStorage.getItem(SUPPLEMENT_PROTOCOL_KEY);
+  if (current) {
+    try {
+      const parsed = JSON.parse(current) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((x): x is SupplementProtocolItem =>
+            typeof x === 'object' &&
+            x !== null &&
+            'id' in x &&
+            'nom' in x &&
+            'dosage' in x &&
+            'timing' in x &&
+            typeof (x as any).id === 'string' &&
+            typeof (x as any).nom === 'string' &&
+            typeof (x as any).dosage === 'string' &&
+            typeof (x as any).timing === 'string'
+          )
+          .map((x) => ({
+            id: x.id,
+            nom: x.nom,
+            dosage: x.dosage,
+            timing: x.timing as SupplementTiming,
+            description: typeof x.description === 'string' ? x.description : undefined,
+            frequency: typeof x.frequency === 'string' ? x.frequency : undefined,
+          }));
+      }
+    } catch {
+      // ignore
+    }
+  }
 
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) return [];
+  const legacyRaw = await AsyncStorage.getItem(SUPPLEMENT_PROTOCOL_KEY_LEGACY);
+  if (!legacyRaw) return [];
 
-  return parsed
-    .filter((x): x is SupplementProtocolItem =>
-      typeof x === 'object' &&
-      x !== null &&
-      'id' in x &&
-      'nom' in x &&
-      'dosage' in x &&
-      'timing' in x &&
-      typeof (x as any).id === 'string' &&
-      typeof (x as any).nom === 'string' &&
-      typeof (x as any).dosage === 'string' &&
-      typeof (x as any).timing === 'string'
-    )
-    .map((x) => ({
-      id: x.id,
-      nom: x.nom,
-      dosage: x.dosage,
-      timing: x.timing as SupplementTiming,
-      description: typeof x.description === 'string' ? x.description : undefined,
-      frequency: typeof x.frequency === 'string' ? x.frequency : undefined,
-    }));
+  try {
+    const parsed = JSON.parse(legacyRaw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    const migrated = parsed
+      .filter((x): x is SupplementProtocolItem =>
+        typeof x === 'object' &&
+        x !== null &&
+        'id' in x &&
+        'nom' in x &&
+        'dosage' in x &&
+        'timing' in x &&
+        typeof (x as any).id === 'string' &&
+        typeof (x as any).nom === 'string' &&
+        typeof (x as any).dosage === 'string' &&
+        typeof (x as any).timing === 'string'
+      )
+      .map((x) => ({
+        id: x.id,
+        nom: x.nom,
+        dosage: x.dosage,
+        timing: x.timing as SupplementTiming,
+        description: typeof x.description === 'string' ? x.description : undefined,
+        frequency: typeof x.frequency === 'string' ? x.frequency : undefined,
+      }));
+
+    await AsyncStorage.setItem(SUPPLEMENT_PROTOCOL_KEY, JSON.stringify(migrated));
+    await AsyncStorage.removeItem(SUPPLEMENT_PROTOCOL_KEY_LEGACY);
+    return migrated;
+  } catch {
+    return [];
+  }
 }
 
 export async function saveSupplementProtocol(items: SupplementProtocolItem[]): Promise<void> {

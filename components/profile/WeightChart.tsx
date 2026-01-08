@@ -29,10 +29,18 @@ export default function WeightChart({ points, height = 110 }: Props) {
 
   const chart = useMemo(() => {
     if (width <= 0) return null;
-    if (points.length < 2) return null;
+    if (points.length === 0) return null;
 
     const padding = 12;
     const span = Math.max(0.0001, max - min);
+
+    if (points.length === 1) {
+      const dot = { x: Math.round(width / 2), y: Math.round(height / 2) };
+      return {
+        path: buildPath([dot]),
+        dots: [dot],
+      };
+    }
 
     const mapped = points.map((p, i) => {
       const x = padding + (i / Math.max(1, points.length - 1)) * (width - padding * 2);
@@ -50,6 +58,12 @@ export default function WeightChart({ points, height = 110 }: Props) {
     const nextWidth = Math.round(e.nativeEvent.layout.width);
     if (nextWidth !== width) setWidth(nextWidth);
   };
+
+  const placeholderText = useMemo(() => {
+    if (points.length === 0) return 'Ajoute un poids pour commencer.';
+    if (points.length === 1) return 'Ajoute un 2e poids pour voir la courbe.';
+    return '—';
+  }, [points.length]);
 
   return (
     <View style={styles.wrap} onLayout={onLayout}>
@@ -80,7 +94,7 @@ export default function WeightChart({ points, height = 110 }: Props) {
         ) : (
           <View style={[styles.placeholder, { backgroundColor: theme.colors.surface }]}> 
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {points.length < 2 ? 'Ajoute au moins 2 poids pour voir le graphique.' : '—'}
+              {placeholderText}
             </Text>
           </View>
         )}

@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, Divider, Text, useTheme } from 'react-native-paper';
+import { Button, Card, Chip, Divider, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MOCK_DATA, type WeeklyProgramDay, type WorkoutDetailedSession } from '@/constants/mockData';
@@ -18,7 +18,6 @@ function statusLabel(status: WeeklyProgramDay['status']): string {
 
 export default function WorkoutDayScreen() {
   const router = useRouter();
-  const theme = useTheme();
   const { dayId } = useLocalSearchParams<DayParams>();
 
   const day = useMemo(() => {
@@ -75,8 +74,6 @@ export default function WorkoutDayScreen() {
                   params: { sessionId: String(day.detailed_session_id ?? '') },
                 })
               }
-              buttonColor={theme.colors.primary}
-              textColor={theme.colors.onPrimary}
               style={styles.startButton}
               contentStyle={styles.startButtonContent}>
               {day.status === 'Rest' ? 'Repos' : 'Démarrer cette séance'}

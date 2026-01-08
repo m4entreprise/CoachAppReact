@@ -3,6 +3,8 @@ import React, { useMemo } from 'react';
 import { ImageBackground, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Divider, Text, useTheme } from 'react-native-paper';
 
+import { CalendarDays, ChevronRight, Clock, History } from 'lucide-react-native';
+
 import { MOCK_DATA, type ProgramDayStatus, type Weekday, type WeeklyProgramDay } from '@/constants/mockData';
 
 const WEEKDAY_BY_DATE_INDEX: Weekday[] = [
@@ -43,25 +45,47 @@ export default function WorkoutScreen() {
   const canStartToday = todayPlan.status !== 'Rest';
   const todaySessionId = todayPlan.detailed_session_id;
 
+  const dateLabel = useMemo(() => {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+    }).format(new Date());
+  }, []);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <Text variant="headlineSmall" style={styles.heading}>
-            Training
-          </Text>
-          <Text variant="bodyMedium" style={styles.subheading}>
-            {weeklyProgram.semaine_label} • Plan hebdo
+        <View style={styles.headerTopLine}>
+          <View style={styles.headerLeft}>
+            <Text variant="headlineSmall" style={styles.heading}>
+              Training
+            </Text>
+            <Text variant="bodyMedium" style={styles.subheading}>
+              {dateLabel}
+            </Text>
+          </View>
+
+          <View style={[styles.historyPill, { borderColor: theme.colors.outline }]}> 
+            <History size={16} color={theme.colors.primary} />
+            <Button mode="text" onPress={() => router.push('/workout/history' as const)}>
+              Historique
+            </Button>
+          </View>
+        </View>
+
+        <View style={styles.weekMetaRow}>
+          <View style={[styles.weekPill, { borderColor: theme.colors.outline }]}> 
+            <CalendarDays size={16} color={theme.colors.primary} />
+            <Text variant="labelMedium" style={{ color: theme.colors.onSurface }}>
+              {weeklyProgram.semaine_label}
+            </Text>
+          </View>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            Plan hebdo
           </Text>
         </View>
-        <Button mode="text" onPress={() => router.push('/workout/history' as const)}> 
-          Historique
-        </Button>
       </View>
-
-      <Text variant="titleMedium" style={[styles.sectionTitle, styles.heading]}>
-        Séance du jour • {todayPlan.jour}
-      </Text>
 
       <Card mode="contained" style={[styles.card, styles.flatCard]}>
         <ImageBackground
@@ -74,16 +98,21 @@ export default function WorkoutScreen() {
 
           <View style={styles.heroContent}>
             <View style={styles.heroTopRow}>
-              <Chip
-                style={styles.statusChip}
-                textStyle={{ color: theme.colors.onSurface }}
-                selectedColor={theme.colors.onSurface}>
-                {statusLabel(todayPlan.status)}
-              </Chip>
+              <View style={[styles.heroTag, { borderColor: 'rgba(255,255,255,0.18)' }]}> 
+                <Chip
+                  style={styles.statusChip}
+                  textStyle={{ color: theme.colors.onSurface }}
+                  selectedColor={theme.colors.onSurface}>
+                  {statusLabel(todayPlan.status)}
+                </Chip>
+              </View>
               {typeof todayPlan.duree === 'number' ? (
-                <Text variant="labelMedium" style={styles.heroMeta}>
-                  {todayPlan.duree} min
-                </Text>
+                <View style={[styles.heroTag, { borderColor: 'rgba(255,255,255,0.18)' }]}> 
+                  <Clock size={16} color={theme.colors.primary} />
+                  <Text variant="labelMedium" style={{ color: '#FFFFFF' }}>
+                    {todayPlan.duree} min
+                  </Text>
+                </View>
               ) : null}
             </View>
 
@@ -94,21 +123,32 @@ export default function WorkoutScreen() {
               {todayPlan.focus}
             </Text>
 
-            <Button
-              mode="contained"
-              disabled={!canStartToday}
-              onPress={() =>
-                router.push({
-                  pathname: '/workout/session',
-                  params: { sessionId: String(todaySessionId ?? '') },
-                })
-              }
-              buttonColor={theme.colors.primary}
-              textColor={theme.colors.onPrimary}
-              style={styles.heroButton}
-              contentStyle={styles.heroButtonContent}>
-              {todayPlan.status === 'Rest' ? 'Repos' : 'Démarrer'}
-            </Button>
+            {canStartToday ? (
+              <Button
+                mode="contained"
+                disabled={!canStartToday}
+                onPress={() =>
+                  router.push({
+                    pathname: '/workout/session',
+                    params: { sessionId: String(todaySessionId ?? '') },
+                  })
+                }
+                style={styles.heroButton}
+                contentStyle={styles.heroButtonContent}>
+                Démarrer
+              </Button>
+            ) : (
+              <Button
+                mode="outlined"
+                onPress={() =>
+                  router.push({
+                    pathname: '/workout/day',
+                    params: { dayId: todayPlan.id },
+                  })
+                }>
+                Détails
+              </Button>
+            )}
           </View>
         </ImageBackground>
       </Card>
@@ -161,6 +201,7 @@ export default function WorkoutScreen() {
                     {day.focus}
                   </Text>
                 </View>
+                <ChevronRight size={18} color={theme.colors.onSurfaceVariant} />
               </View>
 
               {idx < weeklyProgram.jours.length - 1 ? <Divider style={styles.divider} /> : null}
@@ -183,6 +224,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerRow: {
+    gap: 10,
+  },
+  headerTopLine: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -236,6 +280,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
+  },
+  heroTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   statusChip: {
     backgroundColor: 'rgba(30,30,30,0.85)',
@@ -259,6 +314,34 @@ const styles = StyleSheet.create({
   weekHeader: {
     marginTop: 8,
     gap: 2,
+  },
+  weekMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 2,
+  },
+  weekPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: '#1E1E1E',
+  },
+  historyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: 10,
+    paddingRight: 6,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: '#1E1E1E',
   },
   weekList: {
     gap: 10,

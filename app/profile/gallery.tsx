@@ -73,6 +73,11 @@ export default function ProfileGalleryModal() {
               Ajoute tes photos (face / profil / dos) pour suivre ta progression.
             </Text>
           </Card.Content>
+          <Card.Actions>
+            <Button mode="contained" onPress={openAdd}>
+              Ajouter
+            </Button>
+          </Card.Actions>
         </Card>
       ) : (
         <View style={styles.list}>

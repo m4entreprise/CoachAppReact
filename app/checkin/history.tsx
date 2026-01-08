@@ -73,6 +73,11 @@ export default function CheckInHistoryModal() {
               Ajoute ton premier check-in pour suivre ton ressenti (sommeil, stress, énergie…).
             </Text>
           </Card.Content>
+          <Card.Actions>
+            <Button mode="contained" onPress={openAdd}>
+              Ajouter
+            </Button>
+          </Card.Actions>
         </Card>
       ) : (
         <View style={styles.list}>
