@@ -4,12 +4,15 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { addWorkoutLog, deleteWorkoutDraft, loadWorkoutDraft, type WorkoutLogEntry } from '@/lib/workoutStorage';
+
 type SummaryParams = {
   durationSeconds?: string;
   volumeTotal?: string;
   completedExercises?: string;
   totalExercises?: string;
   sessionTitle?: string;
+  logId?: string;
 };
 
 function formatDuration(totalSeconds: number): string {
@@ -27,6 +30,7 @@ export default function WorkoutSummaryScreen() {
   const completedExercises = Number(params.completedExercises ?? 0);
   const totalExercises = Number(params.totalExercises ?? 0);
   const sessionTitle = String(params.sessionTitle ?? 'Séance');
+  const logId = typeof params.logId === 'string' ? params.logId : '';
 
   const prettyVolume = useMemo(() => {
     if (!Number.isFinite(volumeTotal)) return '0';
@@ -35,6 +39,35 @@ export default function WorkoutSummaryScreen() {
 
   const [rpe, setRpe] = useState<number>(7);
   const [notes, setNotes] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+
+  const persistAndClose = async () => {
+    if (!logId) {
+      router.push('/');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const draft = await loadWorkoutDraft(logId);
+      if (!draft) {
+        router.push('/');
+        return;
+      }
+
+      const entry: WorkoutLogEntry = {
+        ...draft,
+        rpe,
+        notes: notes.trim() ? notes.trim() : undefined,
+      };
+
+      await addWorkoutLog(entry);
+      await deleteWorkoutDraft(logId);
+      router.push('/');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -103,10 +136,11 @@ export default function WorkoutSummaryScreen() {
 
         <Button
           mode="contained"
-          onPress={() => router.push('/')}
+          disabled={saving}
+          onPress={() => void persistAndClose()}
           style={styles.primaryButton}
           contentStyle={styles.primaryButtonContent}>
-          Valider et fermer
+          {saving ? 'Sauvegarde…' : 'Valider et fermer'}
         </Button>
       </ScrollView>
     </SafeAreaView>

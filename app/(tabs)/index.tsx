@@ -1,11 +1,25 @@
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ImageBackground, ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar, Button, Card, Checkbox, ProgressBar, Text, useTheme } from 'react-native-paper';
 
-import { MOCK_DATA, type Supplement, type SupplementTiming } from '@/constants/mockData';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { MOCK_DATA, type SupplementTiming } from '@/constants/mockData';
+import {
+    ensureSupplementProtocolInitialized,
+    getDayKey,
+    loadSupplementComplianceDay,
+    setSupplementTakenForDay,
+    type SupplementProtocolItem,
+} from '@/lib/supplementStorage';
 
 type TimingSection = 'Matin' | 'Midi' | 'Soir';
+
+type DashboardSupplement = SupplementProtocolItem & {
+  isTaken: boolean;
+  takenAtISO?: string;
+};
 
 function timingToSection(timing: SupplementTiming): TimingSection {
   if (timing === 'Pre-Workout') return 'Midi';
@@ -16,10 +30,38 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { dashboard, workoutSession } = MOCK_DATA;
-  const [supplements, setSupplements] = useState<Supplement[]>(MOCK_DATA.supplements);
+
+  const [protocol, setProtocol] = useState<SupplementProtocolItem[]>([]);
+  const [takenById, setTakenById] = useState<Record<string, { taken: boolean; takenAtISO?: string }>>({});
+
+  const todayKey = useMemo(() => getDayKey(new Date()), []);
+
+  const loadSupplements = useCallback(async () => {
+    const p = await ensureSupplementProtocolInitialized();
+    setProtocol(p);
+    const day = await loadSupplementComplianceDay(todayKey);
+    setTakenById(day.takenById);
+  }, [todayKey]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadSupplements();
+    }, [loadSupplements])
+  );
+
+  const supplements = useMemo<DashboardSupplement[]>(() => {
+    return protocol.map((p) => {
+      const state = takenById[p.id];
+      return {
+        ...p,
+        isTaken: state?.taken ?? false,
+        takenAtISO: state?.takenAtISO,
+      };
+    });
+  }, [protocol, takenById]);
 
   const supplementsBySection = useMemo(() => {
-    const grouped: Record<TimingSection, Supplement[]> = {
+    const grouped: Record<TimingSection, DashboardSupplement[]> = {
       Matin: [],
       Midi: [],
       Soir: [],
@@ -35,8 +77,10 @@ export default function HomeScreen() {
   const takenCount = useMemo(() => supplements.filter((s) => s.isTaken).length, [supplements]);
   const supplementsProgress = supplements.length === 0 ? 0 : takenCount / supplements.length;
 
-  const toggleSupplement = (id: string) => {
-    setSupplements((prev) => prev.map((s) => (s.id === id ? { ...s, isTaken: !s.isTaken } : s)));
+  const toggleSupplement = async (id: string) => {
+    const prev = takenById[id]?.taken ?? false;
+    const updated = await setSupplementTakenForDay(todayKey, id, !prev);
+    setTakenById(updated.takenById);
   };
 
   return (
@@ -125,9 +169,18 @@ export default function HomeScreen() {
               {items.map((s) => (
                 <Checkbox.Item
                   key={s.id}
-                  label={`${s.nom} • ${s.dosage}`}
+                  label={
+                    s.isTaken && s.takenAtISO
+                      ? `${s.nom} • ${s.dosage} • ${new Intl.DateTimeFormat('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }).format(new Date(s.takenAtISO))}`
+                      : `${s.nom} • ${s.dosage}`
+                  }
                   status={s.isTaken ? 'checked' : 'unchecked'}
-                  onPress={() => toggleSupplement(s.id)}
+                  onPress={() => {
+                    void toggleSupplement(s.id);
+                  }}
                 />
               ))}
             </Card.Content>

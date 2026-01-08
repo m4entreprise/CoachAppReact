@@ -6,6 +6,7 @@ import { Button, Card, Chip, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MOCK_DATA, type WorkoutExercise } from '@/constants/mockData';
+import { saveWorkoutDraft, type WorkoutLogDraft, type WorkoutLoggedExercise } from '@/lib/workoutStorage';
 
 type SetInputState = {
   poids?: string;
@@ -273,6 +274,28 @@ export default function WorkoutSessionScreen() {
     };
   };
 
+  const buildLoggedExercises = (): WorkoutLoggedExercise[] => {
+    return session.exercices.map((ex) => {
+      return {
+        exerciseId: ex.id,
+        name: ex.nom,
+        restSeconds: ex.repos_secondes,
+        sets: ex.series.map((set) => {
+          const state = setState[set.id];
+          const weightKg = Number(String(state?.poids ?? '').replace(',', '.'));
+          const reps = Number(String(state?.reps ?? '').replace(',', '.'));
+          return {
+            setId: set.id,
+            targetReps: set.reps_cibles,
+            weightKg: Number.isFinite(weightKg) ? weightKg : undefined,
+            reps: Number.isFinite(reps) ? reps : undefined,
+            done: Boolean(state?.done),
+          };
+        }),
+      };
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.container}>
@@ -399,8 +422,22 @@ export default function WorkoutSessionScreen() {
 
           <Button
             mode="contained"
-            onPress={() => {
+            onPress={async () => {
               const summary = computeSummary();
+              const logId = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+              const draft: WorkoutLogDraft = {
+                id: logId,
+                createdAtISO: new Date().toISOString(),
+                sessionId: typeof sessionId === 'string' && sessionId.length > 0 ? sessionId : undefined,
+                sessionTitle: summary.sessionTitle,
+                durationSeconds: summary.durationSeconds,
+                volumeTotal: summary.volumeTotal,
+                completedExercises: summary.completedExercises,
+                totalExercises: summary.totalExercises,
+                exercises: buildLoggedExercises(),
+              };
+
+              await saveWorkoutDraft(draft);
               router.push({
                 pathname: '/workout/summary' as const,
                 params: {
@@ -409,6 +446,7 @@ export default function WorkoutSessionScreen() {
                   completedExercises: String(summary.completedExercises),
                   totalExercises: String(summary.totalExercises),
                   sessionTitle: summary.sessionTitle,
+                  logId,
                 },
               });
             }}

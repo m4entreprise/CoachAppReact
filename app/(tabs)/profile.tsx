@@ -5,6 +5,7 @@ import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, IconButton, Text, useTheme } from 'react-native-paper';
 
 import WeightChart from '@/components/profile/WeightChart';
+import { loadCheckIns, type CheckInEntry } from '@/lib/checkinStorage';
 import {
     loadMeasurements,
     loadPersonalInfo,
@@ -31,6 +32,7 @@ export default function ProfileScreen() {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
   const [personal, setPersonal] = useState<PersonalInfo>({});
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhotoEntry[]>([]);
+  const [checkIns, setCheckIns] = useState<CheckInEntry[]>([]);
 
   const sortedEntries = useMemo(() => {
     return [...entries].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
@@ -49,10 +51,16 @@ export default function ProfileScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, p, prog] = await Promise.all([loadMeasurements(), loadPersonalInfo(), loadProgressPhotos()]);
+      const [m, p, prog, checkins] = await Promise.all([
+        loadMeasurements(),
+        loadPersonalInfo(),
+        loadProgressPhotos(),
+        loadCheckIns(),
+      ]);
       setEntries(m);
       setPersonal(p);
       setProgressPhotos(prog);
+      setCheckIns(checkins);
     } finally {
       setLoading(false);
     }
@@ -85,6 +93,22 @@ export default function ProfileScreen() {
     router.push({
       pathname: '/profile/progress',
       params: { id },
+    });
+
+  const openProgressGallery = () =>
+    router.push({
+      pathname: '/profile/gallery' as const,
+    });
+
+  const sortedCheckIns = useMemo(() => {
+    return [...checkIns].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
+  }, [checkIns]);
+
+  const latestCheckIn = sortedCheckIns[0];
+
+  const openCheckInHistory = () =>
+    router.push({
+      pathname: '/checkin/history' as const,
     });
 
   return (
@@ -176,8 +200,39 @@ export default function ProfileScreen() {
              <Button mode="contained" onPress={openProgressAdd}>
                Ajouter des photos
              </Button>
+             <Button mode="outlined" onPress={openProgressGallery}>
+               Voir la galerie
+             </Button>
            </Card.Actions>
          </Card>
+
+        <Card mode="elevated" style={styles.card}>
+          <Card.Title title="Check-in hebdo" subtitle={loading ? 'Chargement…' : `${sortedCheckIns.length} entrée(s)`} />
+          <Card.Content>
+            {sortedCheckIns.length === 0 ? (
+              <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
+                Ajoute un check-in (sommeil, stress, énergie…) pour suivre ton ressenti semaine après semaine.
+              </Text>
+            ) : (
+              <View>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Dernier : {formatDateFr(latestCheckIn.dateISO)}
+                </Text>
+                <Text variant="bodySmall" style={[styles.muted, { color: theme.colors.onSurfaceVariant, marginTop: 6 }]}>
+                  Sommeil {latestCheckIn.sleep}/10 • Stress {latestCheckIn.stress}/10 • Énergie {latestCheckIn.energy}/10
+                </Text>
+                <Text variant="bodySmall" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
+                  Adhérence nutrition {latestCheckIn.nutritionAdherence}/10
+                </Text>
+              </View>
+            )}
+          </Card.Content>
+          <Card.Actions>
+            <Button mode="contained" onPress={openCheckInHistory}>
+              Ouvrir
+            </Button>
+          </Card.Actions>
+        </Card>
 
         <Card mode="elevated" style={styles.card}>
           <Card.Title title="Résumé" subtitle={loading ? 'Chargement…' : `${sortedEntries.length} entrée(s)`} />

@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { CalendarCheck, Dumbbell, Pill, User } from 'lucide-react-native';
+import { CalendarCheck, Dumbbell, Pill, User, Utensils } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -47,8 +47,16 @@ export default function TabLayout() {
         name="supplements"
         options={{
           title: 'Mon Protocole',
-          tabBarLabel: 'Nutrition',
+          tabBarLabel: 'Suppléments',
           tabBarIcon: ({ color, size }) => <Pill color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="nutrition"
+        options={{
+          title: 'Mon Journal',
+          tabBarLabel: 'Nutrition',
+          tabBarIcon: ({ color, size }) => <Utensils color={color} size={size} />,
         }}
       />
       <Tabs.Screen

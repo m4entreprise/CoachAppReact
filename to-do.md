@@ -2,12 +2,16 @@
 
 Objectif : livrer une application **mobile-first**, utilisable **hors-ligne**, avec un **frontend complet côté élève** (sans backend coach pour le moment).
 
+Choix (ordre de réalisation) : commencer par **Historique entraînement + persistance des workout logs**.
+
+Pourquoi : c’est le cœur de la valeur côté élève (faire une séance -> retrouver ses perfs), et ça pose les bases “offline-first” pour tout le reste.
+
 ---
 
 ## 0) Décisions (à trancher maintenant)
-- [ ] **Scope MVP élève** : l’élève suit un programme *déjà fourni localement* (mock/seed), et log ses données.
-- [ ] **Source of truth** : tout est **local** (AsyncStorage + fichiers + éventuellement SQLite plus tard).
-- [ ] **Sync plus tard** : toutes les données doivent être modélisées de façon à pouvoir être synchronisées (ids stables, dates ISO, structure “entries”).
+- [x] **Scope MVP élève** : l’élève suit un programme *déjà fourni localement* (mock/seed), et log ses données.
+- [x] **Source of truth** : tout est **local** (AsyncStorage + fichiers + éventuellement SQLite plus tard).
+- [x] **Sync plus tard** : toutes les données doivent être modélisées de façon à pouvoir être synchronisées (ids stables, dates ISO, structure “entries”).
 
 ---
 
@@ -44,7 +48,7 @@ Objectif : livrer une application **mobile-first**, utilisable **hors-ligne**, a
 
 ### 2.3 Évolutions photo (face/profil/dos)
 - [x] Ajout/édition/suppression d’une évolution photo.
-- [ ] Vue dédiée “Galerie” : afficher l’historique complet (pas seulement 3 dernières).
+- [x] Vue dédiée “Galerie” : afficher l’historique complet (pas seulement 3 dernières).
 - [ ] Mode comparaison (V1.5): avant/après côte-à-côte.
 - [ ] Ghost overlay (V1.5): aide à reprendre la même pose.
 
@@ -74,19 +78,19 @@ Objectif : livrer une application **mobile-first**, utilisable **hors-ligne**, a
   - [ ] Ajout de notes par exercice/séance.
 
 ### 3.4 Historique entraînement
-- [ ] Écran “Historique” des séances terminées.
-  - [ ] Détail d’une séance passée.
-  - [ ] KPI: volume, durée, séries.
+- [x] Écran “Historique” des séances terminées.
+  - [x] Détail d’une séance passée.
+  - [x] KPI: volume, durée, séries.
 
 ---
 
 ## 4) Suppléments (élève)
 Actuel : affichage mock en checklist.
-- [ ] Stockage local “protocole suppléments” (remplacer mock)
-  - [ ] CRUD local : suppléments, dosage, timing (matin/pre-workout/soir), fréquence.
-- [ ] Checklist quotidienne
-  - [ ] Possibilité de cocher “pris” + timestamp.
-  - [ ] Historique “compliance” (au moins par jour).
+- [x] Stockage local “protocole suppléments” (remplacer mock)
+  - [x] CRUD local : suppléments, dosage, timing (matin/pre-workout/soir), fréquence.
+- [x] Checklist quotidienne
+  - [x] Possibilité de cocher “pris” + timestamp.
+  - [x] Historique “compliance” (au moins par jour).
 - [ ] Notifications (V1.5)
   - [ ] Rappel matin/soir.
   - [ ] Rappel post-workout contextuel.
@@ -96,25 +100,25 @@ Actuel : affichage mock en checklist.
 ## 5) Nutrition (élève) — MVP local
 Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 
-- [ ] Écran “Nutrition” / “Journal”
-  - [ ] Journal photo (repas) : photo + note + tags (petit dej / dej / diner / snack).
+- [x] Écran “Nutrition” / “Journal”
+  - [x] Journal photo (repas) : photo + note + tags (petit dej / dej / diner / snack).
   - [ ] Option macros manuels (calories/prot/gluc/lip) (optionnel).
-- [ ] Historique et feedback
-  - [ ] Timeline des repas.
-  - [ ] Stat du jour (nb de repas / macros si activé).
+- [x] Historique et feedback
+  - [x] Timeline des repas.
+  - [x] Stat du jour (nb de repas / macros si activé).
 
 ---
 
 ## 6) Bilans / Check-ins (élève) — MVP local
-- [ ] Écran “Check-in” hebdo
-  - [ ] Formulaire fixe MVP (sans builder coach):
-    - [ ] sommeil (1–10)
-    - [ ] stress (1–10)
-    - [ ] énergie (1–10)
-    - [ ] adhérence nutrition (1–10)
-    - [ ] douleurs (texte)
+- [x] Écran “Check-in” hebdo
+  - [x] Formulaire fixe MVP (sans builder coach):
+    - [x] sommeil (1–10)
+    - [x] stress (1–10)
+    - [x] énergie (1–10)
+    - [x] adhérence nutrition (1–10)
+    - [x] douleurs (texte)
     - [ ] photos (optionnel, peut réutiliser évolutions)
-  - [ ] Enregistrement local + historique des check-ins.
+  - [x] Enregistrement local + historique des check-ins.
 
 (V1.5)
 - [ ] Logique conditionnelle.
@@ -125,11 +129,11 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 ## 7) Offline-first (MVP local)
 - [x] Données profil/mesures/photos persistées localement.
 - [ ] Sécuriser la persistance “app-wide”
-  - [ ] Migrer les données “workout logs” vers un stockage local persistant (si pas déjà).
+  - [x] Migrer les données “workout logs” vers un stockage local persistant (si pas déjà).
   - [ ] Gestion des versions (ex: `*_v1`, `*_v2`) + migrations légères.
 - [ ] Gestion stockage média
   - [x] Copier images sélectionnées dans le dossier app.
-  - [ ] Nettoyage : quand on supprime une entrée, supprimer les fichiers associés (déjà fait pour progress, à vérifier partout).
+  - [x] Nettoyage : quand on supprime une entrée, supprimer les fichiers associés (déjà fait pour progress, à vérifier partout).
 
 ---
 
@@ -145,7 +149,7 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 ---
 
 ## 9) QA / Qualité / Release (MVP)
-- [ ] Lint OK (actuellement ✅, à maintenir).
+- [x] Lint OK (actuellement ✅, à maintenir).
 - [ ] Tests manuels “parcours élève”
   - [ ] onboarding local (premier lancement)
   - [ ] faire une séance complète + résumé + historique
@@ -154,7 +158,7 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
   - [ ] journal nutrition photo
   - [ ] check-in hebdo
 - [ ] Gestion permissions
-  - [ ] galerie refusée → UX correcte
+  - [x] galerie refusée → UX correcte
   - [ ] caméra (si ajoutée) refusée → UX correcte
 - [ ] Build device
   - [ ] Android
@@ -165,11 +169,49 @@ Comme tu veux un MVP local, éviter l’API MyFitnessPal pour l’instant.
 # Roadmap (Now / Next / Later)
 
 ## NOW (priorité MVP)
-- [ ] Nutrition journal photo
-- [ ] Check-ins hebdo (form fixe)
-- [ ] Suppléments persistés + checklist + compliance
-- [ ] Historique entraînement
-- [ ] Galerie “évolutions photo” complète
+
+### Sprint 1 — Entraînement : historique + persistance (START HERE)
+- [x] Persistance des “workout logs” (storage local, versionné)
+- [x] Écran “Historique” des séances terminées
+- [x] Détail d’une séance passée
+- [x] KPI simples (volume/durée/séries)
+
+**Definition of Done (Sprint 1)**
+- [x] Je fais une séance -> je quitte l’app -> je reviens -> la séance est toujours dans l’historique.
+- [x] Je peux ouvrir une séance passée et voir les charges/reps/notes.
+- [x] Aucun écran vide “cassé” : empty state propre.
+
+### Sprint 2 — Nutrition : journal photo
+- [x] Écran “Nutrition / Journal”
+- [x] Ajout d’un repas (photo + note + tags)
+- [x] Timeline + stats du jour (minimales)
+
+**Definition of Done (Sprint 2)**
+- [x] J’ajoute 3 repas avec photos -> je relance l’app -> tout est conservé.
+- [x] Permissions galerie refusées -> UX non bloquante.
+
+### Sprint 3 — Suppléments : protocole + compliance
+- [x] Remplacer `MOCK_DATA` par un protocole persisté localement
+- [x] Checklist quotidienne + timestamp
+- [x] Historique compliance (par jour)
+
+**Definition of Done (Sprint 3)**
+- [x] Je coche/décoche une prise -> c’est conservé.
+- [x] Je change de jour (ou simulation) -> l’historique reste consultable.
+
+### Sprint 4 — Check-ins : bilan hebdo (form fixe)
+- [x] Écran check-in (sommeil/stress/énergie/adhérence/douleurs)
+- [x] Enregistrement local + historique
+
+**Definition of Done (Sprint 4)**
+- [x] Je remplis 2 check-ins à des dates différentes -> historique lisible.
+
+### Sprint 5 — Photos : galerie évolutions complète
+- [x] Vue “Galerie” : historique complet (pas seulement 3 dernières)
+- [x] Navigation vers édition depuis la galerie
+
+**Definition of Done (Sprint 5)**
+- [x] Je peux parcourir toutes mes entrées photo, éditer/supprimer sans fichiers orphelins visibles.
 
 ## NEXT (V1.5)
 - [ ] Offline workout média cache + robustesse

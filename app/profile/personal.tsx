@@ -2,8 +2,8 @@ import { useTheme } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Divider, Text, TextInput } from 'react-native-paper';
+import { Image, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Card, Divider, Snackbar, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { deletePersistedImageAsync, persistImageAsync } from '@/lib/imageStorage';
@@ -27,6 +27,14 @@ export default function ProfilePersonalModal() {
   const [goal, setGoal] = useState('');
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | undefined>(undefined);
 
+  const [snackVisible, setSnackVisible] = useState(false);
+  const [snackText, setSnackText] = useState('');
+
+  const showSnack = (msg: string) => {
+    setSnackText(msg);
+    setSnackVisible(true);
+  };
+
   const prettyTitle = useMemo(() => 'Informations personnelles', []);
 
   const load = useCallback(async () => {
@@ -49,7 +57,10 @@ export default function ProfilePersonalModal() {
 
   const pickProfilePhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync(false);
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      showSnack("Permission galerie refusée. Tu peux l'activer dans les réglages.");
+      return;
+    }
 
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -175,6 +186,19 @@ export default function ProfilePersonalModal() {
           </Card.Actions>
         </Card>
       </ScrollView>
+
+      <Snackbar
+        visible={snackVisible}
+        onDismiss={() => setSnackVisible(false)}
+        duration={4000}
+        action={{
+          label: 'Réglages',
+          onPress: () => {
+            void Linking.openSettings();
+          },
+        }}>
+        {snackText}
+      </Snackbar>
     </SafeAreaView>
   );
 }

@@ -37,6 +37,14 @@ export default function RootLayout() {
             options={{ presentation: 'modal', headerShown: false }}
           />
           <Stack.Screen
+            name="workout/history"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="workout/log"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
             name="profile/entry"
             options={{ presentation: 'modal', headerShown: false }}
           />
@@ -46,6 +54,26 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="profile/progress"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="profile/gallery"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="nutrition/entry"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="supplements/protocol"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="checkin/history"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="checkin/entry"
             options={{ presentation: 'modal', headerShown: false }}
           />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />

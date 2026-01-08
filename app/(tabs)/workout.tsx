@@ -45,13 +45,18 @@ export default function WorkoutScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.heading}>
-          Training
-        </Text>
-        <Text variant="bodyMedium" style={styles.subheading}>
-          {weeklyProgram.semaine_label} • Plan hebdo
-        </Text>
+      <View style={styles.headerRow}>
+        <View style={styles.headerLeft}>
+          <Text variant="headlineSmall" style={styles.heading}>
+            Training
+          </Text>
+          <Text variant="bodyMedium" style={styles.subheading}>
+            {weeklyProgram.semaine_label} • Plan hebdo
+          </Text>
+        </View>
+        <Button mode="text" onPress={() => router.push('/workout/history' as const)}> 
+          Historique
+        </Button>
       </View>
 
       <Text variant="titleMedium" style={[styles.sectionTitle, styles.heading]}>
@@ -177,7 +182,14 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     gap: 12,
   },
-  header: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  headerLeft: {
+    flex: 1,
     gap: 2,
   },
   heading: {
