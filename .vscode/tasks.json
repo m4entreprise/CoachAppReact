@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1. Backend (Laravel)",
+      "type": "shell",
+      "command": "php artisan serve",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "group": "servers",
+        "reveal": "always",
+        "panel": "split"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "2. Mobile (Expo)",
+      "type": "shell",
+      "command": "npx expo start",
+      "options": {
+        "cwd": "${workspaceFolder}/mobile"
+      },
+      "presentation": {
+        "group": "servers",
+        "reveal": "always",
+        "panel": "split"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🚀 START PROJECT",
+      "dependsOn": ["1. Backend (Laravel)", "2. Mobile (Expo)"],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
