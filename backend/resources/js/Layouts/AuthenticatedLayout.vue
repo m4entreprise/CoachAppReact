@@ -39,6 +39,22 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Dashboard
                                 </NavLink>
+
+                                <NavLink
+                                    v-if="$page.props.auth.user.role === 'coach'"
+                                    :href="route('coach.dashboard')"
+                                    :active="route().current('coach.dashboard')"
+                                >
+                                    Coach
+                                </NavLink>
+
+                                <NavLink
+                                    v-if="$page.props.auth.user.role === 'coach'"
+                                    :href="route('coach.students')"
+                                    :active="route().current('coach.students')"
+                                >
+                                    Élèves
+                                </NavLink>
                             </div>
                         </div>
 
@@ -145,6 +161,22 @@ const showingNavigationDropdown = ref(false);
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.user.role === 'coach'"
+                            :href="route('coach.dashboard')"
+                            :active="route().current('coach.dashboard')"
+                        >
+                            Coach
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.user.role === 'coach'"
+                            :href="route('coach.students')"
+                            :active="route().current('coach.students')"
+                        >
+                            Élèves
                         </ResponsiveNavLink>
                     </div>
 

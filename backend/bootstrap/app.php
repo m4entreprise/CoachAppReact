@@ -17,7 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        $middleware->alias([
+            'coach' => \App\Http\Middleware\EnsureCoach::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
