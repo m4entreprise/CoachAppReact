@@ -6,6 +6,10 @@ use App\Http\Controllers\Coach\LibraryController as CoachLibraryController;
 use App\Http\Controllers\Coach\NutritionCustomFoodController as CoachNutritionCustomFoodController;
 use App\Http\Controllers\Coach\NutritionFoodSearchController as CoachNutritionFoodSearchController;
 use App\Http\Controllers\Coach\NutritionFoodController as CoachNutritionFoodController;
+use App\Http\Controllers\Coach\NutritionDietTemplateController as CoachNutritionDietTemplateController;
+use App\Http\Controllers\Coach\NutritionDietTemplateEditController as CoachNutritionDietTemplateEditController;
+use App\Http\Controllers\Coach\NutritionDietTemplateSlotController as CoachNutritionDietTemplateSlotController;
+use App\Http\Controllers\Coach\NutritionDietTemplateSlotItemController as CoachNutritionDietTemplateSlotItemController;
 use App\Http\Controllers\Coach\NutritionMealTemplateEditController as CoachNutritionMealTemplateEditController;
 use App\Http\Controllers\Coach\NutritionMealTemplateController as CoachNutritionMealTemplateController;
 use App\Http\Controllers\Coach\NutritionMealTemplateItemController as CoachNutritionMealTemplateItemController;
@@ -51,8 +55,25 @@ Route::middleware(['auth', 'coach'])->prefix('coach')->name('coach.')->group(fun
     Route::post('/nutrition/meal-templates/{meal_template}/duplicate-substitute', [CoachNutritionMealTemplateController::class, 'duplicateAsSubstitute'])->name('nutrition.meal-templates.duplicate-substitute');
 
     Route::post('/nutrition/meal-templates/{meal_template}/items', [CoachNutritionMealTemplateItemController::class, 'store'])->name('nutrition.meal-items.store');
+    Route::put('/nutrition/meal-templates/{meal_template}/items/reorder', [CoachNutritionMealTemplateItemController::class, 'reorder'])->name('nutrition.meal-items.reorder');
     Route::put('/nutrition/meal-items/{meal_item}', [CoachNutritionMealTemplateItemController::class, 'update'])->name('nutrition.meal-items.update');
     Route::delete('/nutrition/meal-items/{meal_item}', [CoachNutritionMealTemplateItemController::class, 'destroy'])->name('nutrition.meal-items.destroy');
+
+    Route::post('/nutrition/diet-templates', [CoachNutritionDietTemplateController::class, 'store'])->name('nutrition.diet-templates.store');
+    Route::get('/nutrition/diet-templates/{diet_template}/edit', CoachNutritionDietTemplateEditController::class)->name('nutrition.diet-templates.edit');
+    Route::put('/nutrition/diet-templates/{diet_template}', [CoachNutritionDietTemplateController::class, 'update'])->name('nutrition.diet-templates.update');
+    Route::delete('/nutrition/diet-templates/{diet_template}', [CoachNutritionDietTemplateController::class, 'destroy'])->name('nutrition.diet-templates.destroy');
+
+    Route::post('/nutrition/diet-templates/{diet_template}/slots', [CoachNutritionDietTemplateSlotController::class, 'store'])->name('nutrition.diet-slots.store');
+    Route::put('/nutrition/diet-templates/{diet_template}/slots/reorder', [CoachNutritionDietTemplateSlotController::class, 'reorder'])->name('nutrition.diet-slots.reorder');
+    Route::put('/nutrition/diet-slots/{diet_slot}', [CoachNutritionDietTemplateSlotController::class, 'update'])->name('nutrition.diet-slots.update');
+    Route::delete('/nutrition/diet-slots/{diet_slot}', [CoachNutritionDietTemplateSlotController::class, 'destroy'])->name('nutrition.diet-slots.destroy');
+
+    Route::post('/nutrition/diet-slots/{diet_slot}/items', [CoachNutritionDietTemplateSlotItemController::class, 'store'])->name('nutrition.diet-slot-items.store');
+    Route::put('/nutrition/diet-slots/{diet_slot}/items/reorder', [CoachNutritionDietTemplateSlotItemController::class, 'reorder'])->name('nutrition.diet-slot-items.reorder');
+    Route::post('/nutrition/diet-slots/{diet_slot}/items/import-meal', [CoachNutritionDietTemplateSlotItemController::class, 'importMeal'])->name('nutrition.diet-slot-items.import-meal');
+    Route::put('/nutrition/diet-slot-items/{diet_slot_item}', [CoachNutritionDietTemplateSlotItemController::class, 'update'])->name('nutrition.diet-slot-items.update');
+    Route::delete('/nutrition/diet-slot-items/{diet_slot_item}', [CoachNutritionDietTemplateSlotItemController::class, 'destroy'])->name('nutrition.diet-slot-items.destroy');
     Route::get('/settings', function () {
         return redirect()->route('profile.edit');
     })->name('settings');

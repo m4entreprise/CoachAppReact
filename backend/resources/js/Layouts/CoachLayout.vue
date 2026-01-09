@@ -2,6 +2,7 @@
 import { computed, ref, watchEffect } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import ToastHost from '@/Components/ToastHost.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Bell,
@@ -114,6 +115,7 @@ function topItemClass(active) {
 
 <template>
     <div class="min-h-screen bg-gray-950 text-white">
+        <ToastHost />
         <div class="flex min-h-screen">
             <aside
                 class="flex flex-col border-r border-white/10 bg-gray-950 transition-[width] duration-200"

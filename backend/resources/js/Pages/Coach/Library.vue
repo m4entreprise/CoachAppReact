@@ -4,6 +4,8 @@ import Modal from '@/Components/Modal.vue';
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import CoachLayout from '@/Layouts/CoachLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-vue-next';
+import { toast } from '@/toast';
 
 const props = defineProps({
     foods: {
@@ -19,6 +21,10 @@ const props = defineProps({
         default: () => [],
     },
     mealTemplates: {
+        type: Array,
+        default: () => [],
+    },
+    dietTemplates: {
         type: Array,
         default: () => [],
     },
@@ -118,7 +124,11 @@ function submitMeal() {
     if (mealEditingId.value) {
         mealForm.put(route('coach.nutrition.meal-templates.update', mealEditingId.value), {
             preserveScroll: true,
-            onSuccess: () => closeMealModal(),
+            onSuccess: () => {
+                closeMealModal();
+                toast.success('Repas enregistré.');
+            },
+            onError: () => toast.error("Impossible d'enregistrer."),
         });
         return;
     }
@@ -126,7 +136,11 @@ function submitMeal() {
     mealForm.parent_meal_id = mealParentId.value;
     mealForm.post(route('coach.nutrition.meal-templates.store'), {
         preserveScroll: true,
-        onSuccess: () => closeMealModal(),
+        onSuccess: () => {
+            closeMealModal();
+            toast.success('Repas créé.');
+        },
+        onError: () => toast.error("Impossible de créer le repas."),
     });
 }
 
@@ -137,6 +151,8 @@ function deleteMeal(mealId) {
     router.delete(route('coach.nutrition.meal-templates.destroy', mealId), {
         preserveScroll: true,
         preserveState: true,
+        onSuccess: () => toast.success('Repas supprimé.'),
+        onError: () => toast.error("Impossible de supprimer."),
     });
 }
 
@@ -144,6 +160,71 @@ function duplicateSubstitute(mealId) {
     router.post(route('coach.nutrition.meal-templates.duplicate-substitute', mealId), {}, {
         preserveScroll: true,
         preserveState: true,
+        onSuccess: () => toast.success('Substitut dupliqué.'),
+        onError: () => toast.error('Impossible de dupliquer.'),
+    });
+}
+
+const isDietModalOpen = ref(false);
+const dietEditingId = ref(null);
+const dietForm = useForm({
+    name: '',
+    notes: '',
+});
+
+function openDietCreateModal() {
+    dietEditingId.value = null;
+    dietForm.reset();
+    dietForm.clearErrors();
+    isDietModalOpen.value = true;
+}
+
+function openDietEditModal(diet) {
+    dietEditingId.value = diet.id;
+    dietForm.clearErrors();
+    dietForm.name = diet.name ?? '';
+    dietForm.notes = diet.notes ?? '';
+    isDietModalOpen.value = true;
+}
+
+function closeDietModal() {
+    isDietModalOpen.value = false;
+    dietEditingId.value = null;
+    dietForm.clearErrors();
+}
+
+function submitDiet() {
+    if (dietEditingId.value) {
+        dietForm.put(route('coach.nutrition.diet-templates.update', dietEditingId.value), {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeDietModal();
+                toast.success('Modèle enregistré.');
+            },
+            onError: () => toast.error("Impossible d'enregistrer."),
+        });
+        return;
+    }
+
+    dietForm.post(route('coach.nutrition.diet-templates.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeDietModal();
+            toast.success('Modèle créé.');
+        },
+        onError: () => toast.error("Impossible de créer le modèle."),
+    });
+}
+
+function deleteDiet(dietId) {
+    if (!confirm('Supprimer ce modèle ?')) {
+        return;
+    }
+    router.delete(route('coach.nutrition.diet-templates.destroy', dietId), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => toast.success('Modèle supprimé.'),
+        onError: () => toast.error("Impossible de supprimer."),
     });
 }
 
@@ -228,7 +309,11 @@ function submitAddItem() {
     }
     addItemForm.post(route('coach.nutrition.meal-items.store', addItemMealId.value), {
         preserveScroll: true,
-        onSuccess: () => closeAddItemModal(),
+        onSuccess: () => {
+            closeAddItemModal();
+            toast.success('Aliment ajouté.');
+        },
+        onError: () => toast.error("Impossible d'ajouter l'aliment."),
     });
 }
 
@@ -274,6 +359,7 @@ function sectionClass(active) {
 
 const isFoodsMine = computed(() => selectedItem.value?.id === 'foods-mine');
 const isMealsFavorites = computed(() => selectedItem.value?.id === 'meals-favorites');
+const isDietTemplates = computed(() => selectedItem.value?.id === 'diet-templates');
 
 const search = ref(props.filters?.q ?? '');
 const grp = ref(props.filters?.grp ?? '');
@@ -729,9 +815,9 @@ function formatNumber(v) {
                         <button
                             type="button"
                             class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-                            :disabled="!(isFoodsMine || isMealsFavorites)"
-                            :class="!(isFoodsMine || isMealsFavorites) ? 'opacity-50 cursor-not-allowed' : ''"
-                            @click="isFoodsMine ? openCreateModal() : openMealCreateModal(null)"
+                            :disabled="!(isFoodsMine || isMealsFavorites || isDietTemplates)"
+                            :class="!(isFoodsMine || isMealsFavorites || isDietTemplates) ? 'opacity-50 cursor-not-allowed' : ''"
+                            @click="isFoodsMine ? openCreateModal() : (isMealsFavorites ? openMealCreateModal(null) : openDietCreateModal())"
                         >
                             Nouveau
                         </button>
@@ -958,9 +1044,10 @@ function formatNumber(v) {
                             </div>
                             <button
                                 type="button"
-                                class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                 @click="openMealCreateModal(null)"
                             >
+                                <Plus class="mr-2 h-4 w-4" />
                                 Nouveau repas
                             </button>
                         </div>
@@ -978,22 +1065,27 @@ function formatNumber(v) {
                                         <div v-if="m.notes" class="mt-1 text-sm text-gray-600">{{ m.notes }}</div>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openAddItemModal(m.id)">
+                                        <button type="button" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openAddItemModal(m.id)">
+                                            <Plus class="mr-2 h-4 w-4" />
                                             Ajouter aliment
                                         </button>
                                         <Link
                                             :href="route('coach.nutrition.meal-templates.edit', m.id)"
-                                            class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                            class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                         >
+                                            <Pencil class="mr-2 h-4 w-4" />
                                             Modifier
                                         </Link>
-                                        <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openMealCreateModal(m.id)">
+                                        <button type="button" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openMealCreateModal(m.id)">
+                                            <Plus class="mr-2 h-4 w-4" />
                                             Ajouter substitut
                                         </button>
-                                        <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="duplicateSubstitute(m.id)">
+                                        <button type="button" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="duplicateSubstitute(m.id)">
+                                            <Copy class="mr-2 h-4 w-4" />
                                             Dupliquer en substitut
                                         </button>
-                                        <button type="button" class="rounded-md px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMeal(m.id)">
+                                        <button type="button" class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMeal(m.id)">
+                                            <Trash2 class="mr-2 h-4 w-4" />
                                             Supprimer
                                         </button>
                                     </div>
@@ -1031,16 +1123,19 @@ function formatNumber(v) {
                                                         <div v-if="s.notes" class="mt-1 text-sm text-gray-600">{{ s.notes }}</div>
                                                     </div>
                                                     <div class="flex flex-wrap items-center gap-2">
-                                                        <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openAddItemModal(s.id)">
+                                                        <button type="button" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openAddItemModal(s.id)">
+                                                            <Plus class="mr-2 h-4 w-4" />
                                                             Ajouter aliment
                                                         </button>
                                                         <Link
                                                             :href="route('coach.nutrition.meal-templates.edit', s.id)"
-                                                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                                            class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                                         >
+                                                            <Pencil class="mr-2 h-4 w-4" />
                                                             Modifier
                                                         </Link>
-                                                        <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMeal(s.id)">
+                                                        <button type="button" class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMeal(s.id)">
+                                                            <Trash2 class="mr-2 h-4 w-4" />
                                                             Supprimer
                                                         </button>
                                                     </div>
@@ -1067,6 +1162,93 @@ function formatNumber(v) {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="isDietTemplates" class="mt-6">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900">Modèles de diètes</div>
+                                <div class="mt-1 text-sm text-gray-600">Crée des journées types (matin/midi/soir/snacks) avec macros & micros.</div>
+                            </div>
+                            <button
+                                type="button"
+                                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                @click="openDietCreateModal()"
+                            >
+                                <Plus class="mr-2 h-4 w-4" />
+                                Nouveau modèle
+                            </button>
+                        </div>
+
+                        <div v-if="(dietTemplates ?? []).length === 0" class="mt-6 rounded-lg border border-dashed border-gray-300 p-6">
+                            <div class="text-sm font-medium text-gray-900">Aucun modèle</div>
+                            <div class="mt-1 text-sm text-gray-600">Clique sur “Nouveau modèle” pour créer ta première journée type.</div>
+                        </div>
+
+                        <div v-else class="mt-6 space-y-4">
+                            <div v-for="d in dietTemplates" :key="d.id" class="rounded-lg border border-gray-200 bg-white">
+                                <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 p-4">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-semibold text-gray-900">{{ d.name }}</div>
+                                        <div v-if="d.notes" class="mt-1 text-sm text-gray-600">{{ d.notes }}</div>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Link
+                                            :href="route('coach.nutrition.diet-templates.edit', d.id)"
+                                            class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                        >
+                                            <Pencil class="mr-2 h-4 w-4" />
+                                            Modifier
+                                        </Link>
+
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                            @click="openDietEditModal(d)"
+                                        >
+                                            <Pencil class="mr-2 h-4 w-4" />
+                                            Renommer
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                            @click="deleteDiet(d.id)"
+                                        >
+                                            <Trash2 class="mr-2 h-4 w-4" />
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="p-4">
+                                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Aperçu</div>
+                                    <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Slots</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ d.slots_count ?? 0 }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">kcal</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(d.totals?.kcal) }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Protéines</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(d.totals?.protein) }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Glucides</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(d.totals?.carbs) }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Lipides</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(d.totals?.fat) }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1187,6 +1369,53 @@ function formatNumber(v) {
                         </button>
                         <button type="submit" class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800" :disabled="createForm.processing">
                             {{ editingCustomFoodId ? 'Enregistrer' : 'Créer' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <Modal :show="isDietModalOpen" maxWidth="lg" @close="closeDietModal">
+            <div class="p-6">
+                <div class="text-lg font-semibold text-gray-900">{{ dietEditingId ? 'Modifier un modèle' : 'Nouveau modèle' }}</div>
+                <div class="mt-1 text-sm text-gray-600">Une journée type avec des slots (matin, midi, soir, snacks...).</div>
+
+                <form class="mt-6 space-y-4" @submit.prevent="submitDiet">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600">Nom</label>
+                        <input
+                            v-model="dietForm.name"
+                            type="text"
+                            class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                        <div v-if="dietForm.errors.name" class="mt-1 text-sm text-red-600">{{ dietForm.errors.name }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600">Notes</label>
+                        <textarea
+                            v-model="dietForm.notes"
+                            rows="3"
+                            class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                        <div v-if="dietForm.errors.notes" class="mt-1 text-sm text-red-600">{{ dietForm.errors.notes }}</div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2">
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            @click="closeDietModal"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                            :disabled="dietForm.processing"
+                            :class="dietForm.processing ? 'opacity-50 cursor-not-allowed' : ''"
+                        >
+                            {{ dietEditingId ? 'Enregistrer' : 'Créer' }}
                         </button>
                     </div>
                 </form>

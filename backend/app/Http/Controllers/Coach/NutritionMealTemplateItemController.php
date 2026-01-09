@@ -113,4 +113,67 @@ class NutritionMealTemplateItemController extends Controller
 
         return back();
     }
+
+    public function reorder(Request $request, int $meal_template): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $userId = $request->user()->id;
+
+        $meal = DB::table('nutrition_meal_templates')
+            ->where('id', $meal_template)
+            ->where('user_id', $userId)
+            ->first(['id']);
+
+        if (! $meal) {
+            abort(404);
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $validated['ids'])));
+
+        $allIds = DB::table('nutrition_meal_template_items')
+            ->where('meal_template_id', $meal_template)
+            ->pluck('id')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+
+        if (count($allIds) !== count($ids)) {
+            abort(422);
+        }
+
+        $existingIds = DB::table('nutrition_meal_template_items')
+            ->where('meal_template_id', $meal_template)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+
+        sort($existingIds);
+        $allIdsSorted = $allIds;
+        sort($allIdsSorted);
+        $idsSorted = $ids;
+        sort($idsSorted);
+
+        if ($existingIds !== $idsSorted || $allIdsSorted !== $idsSorted) {
+            abort(422);
+        }
+
+        DB::transaction(function () use ($ids) {
+            $pos = 1;
+            foreach ($ids as $id) {
+                DB::table('nutrition_meal_template_items')
+                    ->where('id', $id)
+                    ->update([
+                        'position' => $pos,
+                        'updated_at' => now(),
+                    ]);
+                $pos++;
+            }
+        });
+
+        return back();
+    }
 }

@@ -22,6 +22,7 @@ class LibraryController extends Controller
         $categoryOptions = null;
         $customFoods = null;
         $mealTemplates = null;
+        $dietTemplates = null;
 
         // MVP: for now, "Mes aliments" uses the imported food catalogue.
         if ($section === 'foods-mine') {
@@ -210,11 +211,103 @@ class LibraryController extends Controller
             })->values();
         }
 
+        if ($section === 'diet-templates') {
+            $userId = $request->user()->id;
+
+            $diets = DB::table('nutrition_diet_templates')
+                ->where('user_id', $userId)
+                ->orderBy('name')
+                ->get([
+                    'id',
+                    'name',
+                    'notes',
+                ]);
+
+            $dietIds = $diets->pluck('id')->all();
+
+            $slots = count($dietIds) > 0
+                ? DB::table('nutrition_diet_template_slots')
+                    ->whereIn('diet_template_id', $dietIds)
+                    ->orderBy('position')
+                    ->get([
+                        'id',
+                        'diet_template_id',
+                        'label',
+                        'position',
+                        'meal_template_id',
+                        'multiplier',
+                    ])
+                : collect();
+
+            $slotsByDiet = $slots->groupBy('diet_template_id');
+
+            $macroTotalsByDiet = [];
+            if (count($dietIds) > 0) {
+                $totalsRows = DB::table('nutrition_diet_template_slot_items as i')
+                    ->join('nutrition_diet_template_slots as s', 's.id', '=', 'i.diet_slot_id')
+                    ->leftJoin('nutrition_custom_foods as cf', 'cf.id', '=', 'i.custom_food_id')
+                    ->leftJoin('nutrition_compositions as kcal', function ($join) {
+                        $join->on('kcal.alim_code', '=', 'i.alim_code')
+                            ->where('kcal.const_code', '=', 328);
+                    })
+                    ->leftJoin('nutrition_compositions as prot', function ($join) {
+                        $join->on('prot.alim_code', '=', 'i.alim_code')
+                            ->where('prot.const_code', '=', 25000);
+                    })
+                    ->leftJoin('nutrition_compositions as carb', function ($join) {
+                        $join->on('carb.alim_code', '=', 'i.alim_code')
+                            ->where('carb.const_code', '=', 31000);
+                    })
+                    ->leftJoin('nutrition_compositions as fat', function ($join) {
+                        $join->on('fat.alim_code', '=', 'i.alim_code')
+                            ->where('fat.const_code', '=', 32000);
+                    })
+                    ->whereIn('s.diet_template_id', $dietIds)
+                    ->groupBy('s.diet_template_id')
+                    ->get([
+                        's.diet_template_id',
+                        DB::raw('sum((i.quantity_g / 100.0) * coalesce(cf.kcal_100g, kcal.teneur, 0)) as kcal'),
+                        DB::raw('sum((i.quantity_g / 100.0) * coalesce(cf.protein_100g, prot.teneur, 0)) as protein'),
+                        DB::raw('sum((i.quantity_g / 100.0) * coalesce(cf.carbs_100g, carb.teneur, 0)) as carbs'),
+                        DB::raw('sum((i.quantity_g / 100.0) * coalesce(cf.fat_100g, fat.teneur, 0)) as fat'),
+                    ]);
+
+                foreach ($totalsRows as $r) {
+                    $macroTotalsByDiet[(string) $r->diet_template_id] = [
+                        'kcal' => (float) $r->kcal,
+                        'protein' => (float) $r->protein,
+                        'carbs' => (float) $r->carbs,
+                        'fat' => (float) $r->fat,
+                    ];
+                }
+            }
+
+            $dietTemplates = $diets->map(function ($d) use ($slotsByDiet, $macroTotalsByDiet) {
+                $s = $slotsByDiet->get($d->id, collect());
+
+                $totals = $macroTotalsByDiet[(string) $d->id] ?? [
+                    'kcal' => 0.0,
+                    'protein' => 0.0,
+                    'carbs' => 0.0,
+                    'fat' => 0.0,
+                ];
+
+                return [
+                    'id' => $d->id,
+                    'name' => $d->name,
+                    'notes' => $d->notes,
+                    'slots_count' => $s->count(),
+                    'totals' => $totals,
+                ];
+            })->values();
+        }
+
         return Inertia::render('Coach/Library', [
             'foods' => $foods,
             'categoryOptions' => $categoryOptions,
             'customFoods' => $customFoods,
             'mealTemplates' => $mealTemplates,
+            'dietTemplates' => $dietTemplates,
             'filters' => [
                 'section' => $section,
                 'q' => $q,

@@ -4,6 +4,10 @@ import Modal from '@/Components/Modal.vue';
 import { computed, ref, watch } from 'vue';
 import CoachLayout from '@/Layouts/CoachLayout.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { useAutoAnimate } from '@formkit/auto-animate/vue';
+import draggable from 'vuedraggable';
+import { ArrowLeft, GripVertical, Plus, Save, Trash2 } from 'lucide-vue-next';
+import { toast } from '@/toast';
 
 const props = defineProps({
     meal: {
@@ -19,6 +23,18 @@ const props = defineProps({
         default: () => ({ kcal: 0, protein: 0, carbs: 0, fat: 0 }),
     },
 });
+
+const itemsLocal = ref([...(props.items ?? [])]);
+watch(
+    () => props.items,
+    (v) => {
+        itemsLocal.value = [...(v ?? [])];
+    },
+    { immediate: true },
+);
+
+const isReorderSaving = ref(false);
+const [itemsParent] = useAutoAnimate();
 
 const mealForm = useForm({
     name: props.meal?.name ?? '',
@@ -36,6 +52,8 @@ watch(
 function submitMeal() {
     mealForm.put(route('coach.nutrition.meal-templates.update', props.meal.id), {
         preserveScroll: true,
+        onSuccess: () => toast.success('Repas enregistré.'),
+        onError: () => toast.error("Impossible d'enregistrer."),
     });
 }
 
@@ -43,6 +61,7 @@ function updateMealItem(itemId, quantityG) {
     router.put(route('coach.nutrition.meal-items.update', itemId), { quantity_g: quantityG }, {
         preserveScroll: true,
         preserveState: true,
+        onError: () => toast.error('Quantité invalide.'),
     });
 }
 
@@ -50,7 +69,30 @@ function deleteMealItem(itemId) {
     router.delete(route('coach.nutrition.meal-items.destroy', itemId), {
         preserveScroll: true,
         preserveState: true,
+        onSuccess: () => toast.success('Aliment retiré.'),
+        onError: () => toast.error("Impossible de retirer l'aliment."),
     });
+}
+
+function persistOrder() {
+    if (isReorderSaving.value) {
+        return;
+    }
+
+    isReorderSaving.value = true;
+    router.put(
+        route('coach.nutrition.meal-items.reorder', props.meal.id),
+        { ids: (itemsLocal.value ?? []).map((i) => i.id) },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => toast.success('Ordre enregistré.'),
+            onError: () => toast.error("Impossible d'enregistrer l'ordre."),
+            onFinish: () => {
+                isReorderSaving.value = false;
+            },
+        },
+    );
 }
 
 function formatNumber(v) {
@@ -140,7 +182,11 @@ function selectCustomFood(row) {
 function submitAddItem() {
     addItemForm.post(route('coach.nutrition.meal-items.store', props.meal.id), {
         preserveScroll: true,
-        onSuccess: () => closeAddItemModal(),
+        onSuccess: () => {
+            closeAddItemModal();
+            toast.success('Aliment ajouté.');
+        },
+        onError: () => toast.error("Impossible d'ajouter l'aliment."),
     });
 }
 
@@ -168,6 +214,7 @@ const breadcrumbTitle = computed(() => {
                         :href="route('coach.library', { section: 'meals-favorites' })"
                         class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                     >
+                        <ArrowLeft class="mr-2 inline-block h-4 w-4" />
                         Retour
                     </Link>
 
@@ -176,6 +223,7 @@ const breadcrumbTitle = computed(() => {
                         class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                         @click="openAddItemModal"
                     >
+                        <Plus class="mr-2 inline-block h-4 w-4" />
                         Ajouter aliment
                     </button>
                 </div>
@@ -202,6 +250,7 @@ const breadcrumbTitle = computed(() => {
 
                         <div class="flex items-center justify-end gap-2">
                             <button type="submit" class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800" :disabled="mealForm.processing">
+                                <Save class="mr-2 inline-block h-4 w-4" />
                                 Enregistrer
                             </button>
                         </div>
@@ -232,16 +281,22 @@ const breadcrumbTitle = computed(() => {
 
                 <div class="rounded-lg bg-white shadow-sm">
                     <div class="border-b border-gray-200 p-4">
-                        <div class="text-sm font-semibold text-gray-900">Items</div>
-                        <div class="mt-1 text-sm text-gray-500">Modifie la quantité pour mettre à jour automatiquement.</div>
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900">Items</div>
+                                <div class="mt-1 text-sm text-gray-500">Glisse-dépose pour réordonner. Modifie la quantité pour mettre à jour.</div>
+                            </div>
+                            <div v-if="isReorderSaving" class="text-sm font-semibold text-gray-700">Enregistrement…</div>
+                        </div>
                     </div>
 
-                    <div v-if="(items ?? []).length === 0" class="p-6 text-sm text-gray-600">Aucun aliment.</div>
+                    <div v-if="(itemsLocal ?? []).length === 0" class="p-6 text-sm text-gray-600">Aucun aliment.</div>
 
                     <div v-else class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="w-10 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"></th>
                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Aliment</th>
                                     <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Quantité (g)</th>
                                     <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">kcal</th>
@@ -251,29 +306,45 @@ const breadcrumbTitle = computed(() => {
                                     <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 bg-white">
-                                <tr v-for="it in items" :key="it.id" class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ it.name }}</td>
-                                    <td class="px-4 py-3 text-right">
-                                        <input
-                                            :default-value="it.quantity_g"
-                                            type="number"
-                                            step="0.001"
-                                            class="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm"
-                                            @change="updateMealItem(it.id, $event.target.value)"
-                                        />
-                                    </td>
-                                    <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.kcal) }}</td>
-                                    <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.protein) }}</td>
-                                    <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.carbs) }}</td>
-                                    <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.fat) }}</td>
-                                    <td class="px-4 py-3 text-right">
-                                        <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMealItem(it.id)">
-                                            Retirer
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
+                            <draggable
+                                v-model="itemsLocal"
+                                item-key="id"
+                                tag="tbody"
+                                handle=".drag-handle"
+                                :component-data="{ ref: itemsParent }"
+                                class="divide-y divide-gray-100 bg-white"
+                                @end="persistOrder"
+                            >
+                                <template #item="{ element: it }">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3">
+                                            <button type="button" class="drag-handle cursor-move text-gray-400 hover:text-gray-600" :disabled="isReorderSaving">
+                                                <GripVertical class="h-4 w-4" />
+                                            </button>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ it.name }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <input
+                                                :default-value="it.quantity_g"
+                                                type="number"
+                                                step="0.001"
+                                                class="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                                                @change="updateMealItem(it.id, $event.target.value)"
+                                            />
+                                        </td>
+                                        <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.kcal) }}</td>
+                                        <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.protein) }}</td>
+                                        <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.carbs) }}</td>
+                                        <td class="px-4 py-3 text-right text-sm text-gray-700">{{ formatNumber(it.fat) }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <button type="button" class="inline-flex items-center rounded-md px-2 py-1 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMealItem(it.id)">
+                                                <Trash2 class="mr-1 h-4 w-4" />
+                                                Retirer
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </draggable>
                         </table>
                     </div>
                 </div>
