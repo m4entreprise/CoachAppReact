@@ -15,7 +15,7 @@ class StudentsController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role']);
 
-        return Inertia::render('Coach/Students', [
+        return Inertia::render('Coach/Clients', [
             'students' => $students,
         ]);
     }
