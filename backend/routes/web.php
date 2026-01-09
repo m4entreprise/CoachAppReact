@@ -6,6 +6,7 @@ use App\Http\Controllers\Coach\LibraryController as CoachLibraryController;
 use App\Http\Controllers\Coach\NutritionCustomFoodController as CoachNutritionCustomFoodController;
 use App\Http\Controllers\Coach\NutritionFoodSearchController as CoachNutritionFoodSearchController;
 use App\Http\Controllers\Coach\NutritionFoodController as CoachNutritionFoodController;
+use App\Http\Controllers\Coach\NutritionMealTemplateEditController as CoachNutritionMealTemplateEditController;
 use App\Http\Controllers\Coach\NutritionMealTemplateController as CoachNutritionMealTemplateController;
 use App\Http\Controllers\Coach\NutritionMealTemplateItemController as CoachNutritionMealTemplateItemController;
 use App\Http\Controllers\Coach\StudentsController as CoachStudentsController;
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'coach'])->prefix('coach')->name('coach.')->group(fun
     Route::delete('/nutrition/custom-foods/{custom_food}', [CoachNutritionCustomFoodController::class, 'destroy'])->name('nutrition.custom-foods.destroy');
 
     Route::post('/nutrition/meal-templates', [CoachNutritionMealTemplateController::class, 'store'])->name('nutrition.meal-templates.store');
+    Route::get('/nutrition/meal-templates/{meal_template}/edit', CoachNutritionMealTemplateEditController::class)->name('nutrition.meal-templates.edit');
     Route::put('/nutrition/meal-templates/{meal_template}', [CoachNutritionMealTemplateController::class, 'update'])->name('nutrition.meal-templates.update');
     Route::delete('/nutrition/meal-templates/{meal_template}', [CoachNutritionMealTemplateController::class, 'destroy'])->name('nutrition.meal-templates.destroy');
     Route::post('/nutrition/meal-templates/{meal_template}/duplicate-substitute', [CoachNutritionMealTemplateController::class, 'duplicateAsSubstitute'])->name('nutrition.meal-templates.duplicate-substitute');

@@ -981,9 +981,12 @@ function formatNumber(v) {
                                         <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openAddItemModal(m.id)">
                                             Ajouter aliment
                                         </button>
-                                        <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openMealEditModal(m)">
+                                        <Link
+                                            :href="route('coach.nutrition.meal-templates.edit', m.id)"
+                                            class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                        >
                                             Modifier
-                                        </button>
+                                        </Link>
                                         <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openMealCreateModal(m.id)">
                                             Ajouter substitut
                                         </button>
@@ -997,39 +1000,24 @@ function formatNumber(v) {
                                 </div>
 
                                 <div class="p-4">
-                                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Items</div>
-
-                                    <div v-if="(m.items ?? []).length === 0" class="mt-3 text-sm text-gray-600">Aucun aliment.</div>
-
-                                    <div v-else class="mt-3 overflow-hidden rounded-md border border-gray-200">
-                                        <table class="min-w-full divide-y divide-gray-200">
-                                            <thead class="bg-gray-50">
-                                                <tr>
-                                                    <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Aliment</th>
-                                                    <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Quantité (g)</th>
-                                                    <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-gray-100 bg-white">
-                                                <tr v-for="it in m.items" :key="it.id">
-                                                    <td class="px-3 py-2 text-sm font-medium text-gray-900">{{ it.name }}</td>
-                                                    <td class="px-3 py-2 text-right">
-                                                        <input
-                                                            :default-value="it.quantity_g"
-                                                            type="number"
-                                                            step="0.001"
-                                                            class="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm"
-                                                            @change="updateMealItem(it.id, $event.target.value)"
-                                                        />
-                                                    </td>
-                                                    <td class="px-3 py-2 text-right">
-                                                        <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMealItem(it.id)">
-                                                            Retirer
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Calories & macros</div>
+                                    <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">kcal</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(m.totals?.kcal) }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Protéines</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(m.totals?.protein) }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Glucides</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(m.totals?.carbs) }}</div>
+                                        </div>
+                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="text-xs font-semibold text-gray-500">Lipides</div>
+                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(m.totals?.fat) }}</div>
+                                        </div>
                                     </div>
 
                                     <div v-if="(m.substitutes ?? []).length > 0" class="mt-6">
@@ -1046,9 +1034,12 @@ function formatNumber(v) {
                                                         <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openAddItemModal(s.id)">
                                                             Ajouter aliment
                                                         </button>
-                                                        <button type="button" class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="openMealEditModal(s)">
+                                                        <Link
+                                                            :href="route('coach.nutrition.meal-templates.edit', s.id)"
+                                                            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                                        >
                                                             Modifier
-                                                        </button>
+                                                        </Link>
                                                         <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMeal(s.id)">
                                                             Supprimer
                                                         </button>
@@ -1056,36 +1047,23 @@ function formatNumber(v) {
                                                 </div>
 
                                                 <div class="p-3">
-                                                    <div v-if="(s.items ?? []).length === 0" class="text-sm text-gray-600">Aucun aliment.</div>
-                                                    <div v-else class="overflow-hidden rounded-md border border-gray-200 bg-white">
-                                                        <table class="min-w-full divide-y divide-gray-200">
-                                                            <thead class="bg-gray-50">
-                                                                <tr>
-                                                                    <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Aliment</th>
-                                                                    <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Quantité (g)</th>
-                                                                    <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="divide-y divide-gray-100 bg-white">
-                                                                <tr v-for="it in s.items" :key="it.id">
-                                                                    <td class="px-3 py-2 text-sm font-medium text-gray-900">{{ it.name }}</td>
-                                                                    <td class="px-3 py-2 text-right">
-                                                                        <input
-                                                                            :default-value="it.quantity_g"
-                                                                            type="number"
-                                                                            step="0.001"
-                                                                            class="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm"
-                                                                            @change="updateMealItem(it.id, $event.target.value)"
-                                                                        />
-                                                                    </td>
-                                                                    <td class="px-3 py-2 text-right">
-                                                                        <button type="button" class="rounded-md px-2 py-1 text-sm font-semibold text-red-700 hover:bg-red-50" @click="deleteMealItem(it.id)">
-                                                                            Retirer
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
+                                                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                                        <div class="rounded-md border border-gray-200 bg-white px-3 py-2">
+                                                            <div class="text-xs font-semibold text-gray-500">kcal</div>
+                                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(s.totals?.kcal) }}</div>
+                                                        </div>
+                                                        <div class="rounded-md border border-gray-200 bg-white px-3 py-2">
+                                                            <div class="text-xs font-semibold text-gray-500">Protéines</div>
+                                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(s.totals?.protein) }}</div>
+                                                        </div>
+                                                        <div class="rounded-md border border-gray-200 bg-white px-3 py-2">
+                                                            <div class="text-xs font-semibold text-gray-500">Glucides</div>
+                                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(s.totals?.carbs) }}</div>
+                                                        </div>
+                                                        <div class="rounded-md border border-gray-200 bg-white px-3 py-2">
+                                                            <div class="text-xs font-semibold text-gray-500">Lipides</div>
+                                                            <div class="mt-1 text-sm font-semibold text-gray-900">{{ formatNumber(s.totals?.fat) }}</div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
