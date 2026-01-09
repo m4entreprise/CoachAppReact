@@ -6,19 +6,30 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class NutritionDietTemplateSlotItemController extends Controller
 {
     public function store(Request $request, int $diet_slot): RedirectResponse
     {
+        $userId = $request->user()->id;
+
         $validated = $request->validate([
             'source_type' => ['required', 'in:catalog,custom'],
-            'alim_code' => ['nullable', 'integer'],
-            'custom_food_id' => ['nullable', 'integer'],
+            'alim_code' => [
+                'nullable',
+                'integer',
+                'required_if:source_type,catalog',
+                Rule::exists('nutrition_foods', 'alim_code'),
+            ],
+            'custom_food_id' => [
+                'nullable',
+                'integer',
+                'required_if:source_type,custom',
+                Rule::exists('nutrition_custom_foods', 'id')->where(fn ($q) => $q->where('user_id', $userId)),
+            ],
             'quantity_g' => ['required', 'numeric', 'min:0.001'],
         ]);
-
-        $userId = $request->user()->id;
 
         $slot = DB::table('nutrition_diet_template_slots as s')
             ->join('nutrition_diet_templates as d', 'd.id', '=', 's.diet_template_id')
@@ -28,28 +39,6 @@ class NutritionDietTemplateSlotItemController extends Controller
 
         if (! $slot) {
             abort(404);
-        }
-
-        if ($validated['source_type'] === 'catalog') {
-            $alimCode = $validated['alim_code'] ?? null;
-            if (! $alimCode) {
-                abort(422);
-            }
-            $exists = DB::table('nutrition_foods')->where('alim_code', $alimCode)->exists();
-            if (! $exists) {
-                abort(404);
-            }
-        }
-
-        if ($validated['source_type'] === 'custom') {
-            $customFoodId = $validated['custom_food_id'] ?? null;
-            if (! $customFoodId) {
-                abort(422);
-            }
-            $exists = DB::table('nutrition_custom_foods')->where('id', $customFoodId)->where('user_id', $userId)->exists();
-            if (! $exists) {
-                abort(404);
-            }
         }
 
         $maxPos = (int) (DB::table('nutrition_diet_template_slot_items')->where('diet_slot_id', $diet_slot)->max('position') ?? 0);
