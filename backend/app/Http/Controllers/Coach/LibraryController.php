@@ -21,6 +21,7 @@ class LibraryController extends Controller
         $foods = null;
         $categoryOptions = null;
         $customFoods = null;
+        $mealTemplates = null;
 
         // MVP: for now, "Mes aliments" uses the imported food catalogue.
         if ($section === 'foods-mine') {
@@ -112,10 +113,89 @@ class LibraryController extends Controller
                 ->withQueryString();
         }
 
+        if ($section === 'meals-favorites') {
+            $userId = $request->user()->id;
+
+            $meals = DB::table('nutrition_meal_templates')
+                ->where('user_id', $userId)
+                ->orderByRaw('parent_meal_id is not null')
+                ->orderBy('parent_meal_id')
+                ->orderBy('name')
+                ->get([
+                    'id',
+                    'parent_meal_id',
+                    'name',
+                    'notes',
+                ]);
+
+            $mealIds = $meals->pluck('id')->all();
+
+            $items = count($mealIds) > 0
+                ? DB::table('nutrition_meal_template_items as i')
+                    ->leftJoin('nutrition_foods as f', 'f.alim_code', '=', 'i.alim_code')
+                    ->leftJoin('nutrition_custom_foods as cf', 'cf.id', '=', 'i.custom_food_id')
+                    ->whereIn('i.meal_template_id', $mealIds)
+                    ->orderBy('i.position')
+                    ->get([
+                        'i.id',
+                        'i.meal_template_id',
+                        'i.source_type',
+                        'i.alim_code',
+                        'i.custom_food_id',
+                        'i.quantity_g',
+                        'i.position',
+                        DB::raw('f.name_fr as catalog_name_fr'),
+                        DB::raw('cf.name as custom_name'),
+                    ])
+                : collect();
+
+            $itemsByMeal = $items->groupBy('meal_template_id');
+            $byParent = $meals->groupBy(function ($m) {
+                return $m->parent_meal_id ? (string) $m->parent_meal_id : '_root';
+            });
+
+            $roots = $byParent->get('_root', collect());
+
+            $mealTemplates = $roots->map(function ($m) use ($byParent, $itemsByMeal) {
+                $subs = $byParent->get((string) $m->id, collect());
+
+                $mapItems = function ($mealId) use ($itemsByMeal) {
+                    return ($itemsByMeal->get($mealId, collect()))->map(function ($i) {
+                        $name = $i->source_type === 'custom' ? $i->custom_name : $i->catalog_name_fr;
+                        return [
+                            'id' => $i->id,
+                            'source_type' => $i->source_type,
+                            'alim_code' => $i->alim_code,
+                            'custom_food_id' => $i->custom_food_id,
+                            'name' => $name,
+                            'quantity_g' => $i->quantity_g,
+                            'position' => $i->position,
+                        ];
+                    })->values();
+                };
+
+                return [
+                    'id' => $m->id,
+                    'name' => $m->name,
+                    'notes' => $m->notes,
+                    'items' => $mapItems($m->id),
+                    'substitutes' => $subs->map(function ($s) use ($mapItems) {
+                        return [
+                            'id' => $s->id,
+                            'name' => $s->name,
+                            'notes' => $s->notes,
+                            'items' => $mapItems($s->id),
+                        ];
+                    })->values(),
+                ];
+            })->values();
+        }
+
         return Inertia::render('Coach/Library', [
             'foods' => $foods,
             'categoryOptions' => $categoryOptions,
             'customFoods' => $customFoods,
+            'mealTemplates' => $mealTemplates,
             'filters' => [
                 'section' => $section,
                 'q' => $q,

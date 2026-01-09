@@ -4,7 +4,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Coach\DashboardController as CoachDashboardController;
 use App\Http\Controllers\Coach\LibraryController as CoachLibraryController;
 use App\Http\Controllers\Coach\NutritionCustomFoodController as CoachNutritionCustomFoodController;
+use App\Http\Controllers\Coach\NutritionFoodSearchController as CoachNutritionFoodSearchController;
 use App\Http\Controllers\Coach\NutritionFoodController as CoachNutritionFoodController;
+use App\Http\Controllers\Coach\NutritionMealTemplateController as CoachNutritionMealTemplateController;
+use App\Http\Controllers\Coach\NutritionMealTemplateItemController as CoachNutritionMealTemplateItemController;
 use App\Http\Controllers\Coach\StudentsController as CoachStudentsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -33,7 +36,21 @@ Route::middleware(['auth', 'coach'])->prefix('coach')->name('coach.')->group(fun
     Route::get('/', CoachDashboardController::class)->name('dashboard');
 
     Route::get('/nutrition/foods/{alim_code}', CoachNutritionFoodController::class)->name('nutrition.food');
+    Route::get('/nutrition/food-search', CoachNutritionFoodSearchController::class)->name('nutrition.food-search');
+
     Route::post('/nutrition/custom-foods', [CoachNutritionCustomFoodController::class, 'store'])->name('nutrition.custom-foods.store');
+    Route::get('/nutrition/custom-foods/{custom_food}', [CoachNutritionCustomFoodController::class, 'show'])->name('nutrition.custom-foods.show');
+    Route::put('/nutrition/custom-foods/{custom_food}', [CoachNutritionCustomFoodController::class, 'update'])->name('nutrition.custom-foods.update');
+    Route::delete('/nutrition/custom-foods/{custom_food}', [CoachNutritionCustomFoodController::class, 'destroy'])->name('nutrition.custom-foods.destroy');
+
+    Route::post('/nutrition/meal-templates', [CoachNutritionMealTemplateController::class, 'store'])->name('nutrition.meal-templates.store');
+    Route::put('/nutrition/meal-templates/{meal_template}', [CoachNutritionMealTemplateController::class, 'update'])->name('nutrition.meal-templates.update');
+    Route::delete('/nutrition/meal-templates/{meal_template}', [CoachNutritionMealTemplateController::class, 'destroy'])->name('nutrition.meal-templates.destroy');
+    Route::post('/nutrition/meal-templates/{meal_template}/duplicate-substitute', [CoachNutritionMealTemplateController::class, 'duplicateAsSubstitute'])->name('nutrition.meal-templates.duplicate-substitute');
+
+    Route::post('/nutrition/meal-templates/{meal_template}/items', [CoachNutritionMealTemplateItemController::class, 'store'])->name('nutrition.meal-items.store');
+    Route::put('/nutrition/meal-items/{meal_item}', [CoachNutritionMealTemplateItemController::class, 'update'])->name('nutrition.meal-items.update');
+    Route::delete('/nutrition/meal-items/{meal_item}', [CoachNutritionMealTemplateItemController::class, 'destroy'])->name('nutrition.meal-items.destroy');
     Route::get('/settings', function () {
         return redirect()->route('profile.edit');
     })->name('settings');
